@@ -12,7 +12,7 @@ Set up an inventory file like so:
 ---
 platform:
   hosts:
-    rj-bcdc1:
+    bcdc1:
       ansible_host: 1.2.3.4
       ansible_user: gburdell3
       ansible_become: true
