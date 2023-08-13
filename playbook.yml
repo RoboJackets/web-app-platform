@@ -1,0 +1,6 @@
+---
+- name: Bootstrap web app platform
+  hosts: platform
+  roles:
+  - docker
+  - consul
