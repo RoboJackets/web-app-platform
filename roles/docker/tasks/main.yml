@@ -17,7 +17,7 @@
     state: absent
     autoremove: true
 
-- name: Add Docker CE Stable RPM repository
+- name: Add Docker repository
   ansible.builtin.yum_repository:
     name: docker-ce-stable
     description: Docker CE Stable - $basearch
