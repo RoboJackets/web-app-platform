@@ -1,4 +1,8 @@
 ---
+#
+# Install Consul and bootstrap ACLs
+# https://developer.hashicorp.com/consul/tutorials/day-0/access-control-setup
+#
 - name: Add HashiCorp repository
   ansible.builtin.yum_repository:
     name: hashicorp
