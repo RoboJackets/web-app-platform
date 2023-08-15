@@ -23,5 +23,5 @@ platform:
 Run the playbook like so:
 
 ```sh
-ansible-playbook --inventory inventory.yml playbook.yml
+ansible-playbook playbook.yml
 ```
