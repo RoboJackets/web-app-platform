@@ -29,6 +29,12 @@
     src: /etc/consul.d/consul.hcl
   register: consul_hcl
 
+- name: Set Consul token as fact
+  ansible.builtin.set_fact:
+    consul_token: "{{ consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}') }}"
+    cacheable: yes
+  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) != None
+
 - name: Write Consul configuration file
   ansible.builtin.template:
     src: consul.hcl
@@ -50,14 +56,14 @@
     name: consul
     state: started
     enabled: false
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Wait for Consul to be available
   ansible.builtin.wait_for:
     path: /var/opt/nomad/run/consul.sock
     state: present
     timeout: 10
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Bootstrap Consul ACL
   ansible.builtin.command:
@@ -69,7 +75,7 @@
   environment:
     CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
   register: consul_bootstrap_raw
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Parse bootstrap token
   ansible.utils.cli_parse:
@@ -77,7 +83,7 @@
     parser:
       name: ansible.utils.json
   register: consul_bootstrap
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Write Consul configuration file with bootstrap token
   ansible.builtin.template:
@@ -87,20 +93,20 @@
     group: consul
     mode: '0600'
     validate: consul validate -config-format=hcl %s
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Stop Consul service
   ansible.builtin.systemd_service:
     name: consul
     state: stopped
     enabled: false
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None or consul_hcl_template.changed
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None or consul_hcl_template.changed"
 
-- name: Read Consul configuration file
-  ansible.builtin.slurp:
-    src: /etc/consul.d/consul.hcl
-  register: consul_hcl
-  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) == None
+- name: Set Consul token as fact
+  ansible.builtin.set_fact:
+    consul_token: "{{ consul_bootstrap.parsed.SecretID }}"
+    cacheable: yes
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Enable and start Consul service
   ansible.builtin.systemd_service:
@@ -113,3 +119,15 @@
     path: /var/opt/nomad/run/consul.sock
     state: present
     timeout: 10
+
+- name: Retrieve nodes from Consul to validate Consul is working
+  ansible.builtin.command:
+    argv:
+    - consul
+    - catalog
+    - nodes
+  environment:
+    CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
+    CONSUL_HTTP_TOKEN: "{{ ansible_facts['consul_token'] }}"
+  register: consul_nodes
+  failed_when: "node_name not in consul_nodes.stdout or datacenter not in consul_nodes.stdout"

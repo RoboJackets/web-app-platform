@@ -15,9 +15,9 @@ bootstrap_expect=1
 acl {
   enabled = true
   default_policy = "deny"
-{% if (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) != None %}
+{% if 'consul_token' in ansible_facts and ansible_facts['consul_token'] != None %}
   tokens {
-    agent = "{{ (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) }}"
+    agent = "{{ ansible_facts['consul_token'] }}"
   }
 {% endif %}
 {% if consul_bootstrap is defined and consul_bootstrap.parsed.SecretID != None %}
