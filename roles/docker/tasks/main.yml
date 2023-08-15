@@ -49,7 +49,7 @@
     state: present
     timeout: 10
 
-- name: Run Hello World image
+- name: Run Hello World image to validate Docker is working
   ansible.builtin.command:
     argv:
     - docker
