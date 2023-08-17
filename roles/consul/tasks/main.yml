@@ -1,0 +1,133 @@
+---
+#
+# Install Consul and bootstrap ACLs
+# https://developer.hashicorp.com/consul/tutorials/day-0/access-control-setup
+#
+- name: Add HashiCorp repository
+  ansible.builtin.yum_repository:
+    name: hashicorp
+    description: Hashicorp Stable - $basearch
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://rpm.releases.hashicorp.com/gpg
+    state: present
+
+- name: Install Consul
+  ansible.builtin.yum:
+    name:
+    - consul
+    state: present
+
+- name: Read Consul user
+  ansible.builtin.getent:
+    database: passwd
+    key: consul
+
+- name: Read Consul configuration file
+  ansible.builtin.slurp:
+    src: /etc/consul.d/consul.hcl
+  register: consul_hcl
+
+- name: Set Consul token as fact
+  ansible.builtin.set_fact:
+    consul_token: "{{ consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}') }}"
+    cacheable: yes
+  when: (consul_hcl['content'] | b64decode | regex_search('[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}')) != None
+
+- name: Write Consul configuration file
+  ansible.builtin.template:
+    src: consul.hcl
+    dest: /etc/consul.d/consul.hcl
+    owner: consul
+    group: consul
+    mode: '0600'
+    validate: consul validate -config-format=hcl %s
+  register: consul_hcl_template
+
+- name: Create /var/opt/nomad/run/
+  ansible.builtin.file:
+    path: /var/opt/nomad/run/
+    state: directory
+    mode: '0777'
+
+- name: Start Consul service
+  ansible.builtin.systemd_service:
+    name: consul
+    state: started
+    enabled: false
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Wait for Consul to be available
+  ansible.builtin.wait_for:
+    path: /var/opt/nomad/run/consul.sock
+    state: present
+    timeout: 10
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Bootstrap Consul ACL
+  ansible.builtin.command:
+    argv:
+    - consul
+    - acl
+    - bootstrap
+    - -format=json
+  environment:
+    CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
+  register: consul_bootstrap_raw
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Parse bootstrap token
+  ansible.utils.cli_parse:
+    text: "{{ consul_bootstrap_raw['stdout'] }}"
+    parser:
+      name: ansible.utils.json
+  register: consul_bootstrap
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Write Consul configuration file with bootstrap token
+  ansible.builtin.template:
+    src: consul.hcl
+    dest: /etc/consul.d/consul.hcl
+    owner: consul
+    group: consul
+    mode: '0600'
+    validate: consul validate -config-format=hcl %s
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Stop Consul service
+  ansible.builtin.systemd_service:
+    name: consul
+    state: stopped
+    enabled: false
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None or consul_hcl_template.changed"
+
+- name: Set Consul token as fact
+  ansible.builtin.set_fact:
+    consul_token: "{{ consul_bootstrap.parsed.SecretID }}"
+    cacheable: yes
+  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+
+- name: Enable and start Consul service
+  ansible.builtin.systemd_service:
+    name: consul
+    state: started
+    enabled: true
+
+- name: Wait for Consul to be available
+  ansible.builtin.wait_for:
+    path: /var/opt/nomad/run/consul.sock
+    state: present
+    timeout: 10
+
+- name: Retrieve nodes from Consul to validate Consul is working
+  ansible.builtin.command:
+    argv:
+    - consul
+    - catalog
+    - nodes
+  environment:
+    CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
+    CONSUL_HTTP_TOKEN: "{{ ansible_facts['consul_token'] }}"
+  register: consul_nodes
+  failed_when: "node_name not in consul_nodes.stdout or datacenter not in consul_nodes.stdout"

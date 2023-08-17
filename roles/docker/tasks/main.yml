@@ -1,0 +1,64 @@
+---
+#
+# Ansible implementation of Docker Engine on CentOS install guide
+# https://docs.docker.com/engine/install/centos/
+#
+- name: Remove old Docker packages
+  ansible.builtin.yum:
+    name:
+    - docker
+    - docker-client
+    - docker-client-latest
+    - docker-common
+    - docker-latest
+    - docker-latest-logrotate
+    - docker-logrotate
+    - docker-engine
+    state: absent
+    autoremove: true
+
+- name: Add Docker repository
+  ansible.builtin.yum_repository:
+    name: docker-ce-stable
+    description: Docker CE Stable - $basearch
+    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+    enabled: true
+    gpgcheck: true
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    state: present
+
+- name: Install Docker packages
+  ansible.builtin.yum:
+    name:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+    state: present
+
+- name: Enable and start Docker service
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Wait for Docker to be available
+  ansible.builtin.wait_for:
+    path: /var/run/docker.sock
+    state: present
+    timeout: 10
+
+- name: Run Hello World image to validate Docker is working
+  ansible.builtin.command:
+    argv:
+    - docker
+    - run
+    - --pull
+    - always
+    - --rm
+    - --network
+    - none
+    - --read-only
+    - --rm
+    - hello-world
