@@ -18,6 +18,7 @@ platform:
       ansible_become: true
       datacenter: bcdc
       node_name: bcdc1
+      region: campus
 ```
 
 Run the playbook like so:

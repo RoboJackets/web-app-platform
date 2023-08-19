@@ -58,7 +58,7 @@
     enabled: false
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
-- name: Wait for Consul to be available
+- name: Wait for Consul socket to be available
   ansible.builtin.wait_for:
     path: /var/opt/nomad/run/consul.sock
     state: present
@@ -66,26 +66,20 @@
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
 - name: Bootstrap Consul ACL
-  ansible.builtin.command:
-    argv:
-    - consul
-    - acl
-    - bootstrap
-    - -format=json
-  environment:
-    CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
-  register: consul_bootstrap_raw
-  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
-
-- name: Parse bootstrap token
-  ansible.utils.cli_parse:
-    text: "{{ consul_bootstrap_raw['stdout'] }}"
-    parser:
-      name: ansible.utils.json
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    method: PUT
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    url: http://localhost/v1/acl/bootstrap
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
   register: consul_bootstrap
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
-- name: Write Consul configuration file with bootstrap token
+- name: Write Consul configuration file with token
   ansible.builtin.template:
     src: consul.hcl
     dest: /etc/consul.d/consul.hcl
@@ -104,7 +98,7 @@
 
 - name: Set Consul token as fact
   ansible.builtin.set_fact:
-    consul_token: "{{ consul_bootstrap.parsed.SecretID }}"
+    consul_token: "{{ consul_bootstrap.json.SecretID }}"
     cacheable: yes
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
 
@@ -114,20 +108,58 @@
     state: started
     enabled: true
 
-- name: Wait for Consul to be available
+- name: Wait for Consul socket to be available
   ansible.builtin.wait_for:
     path: /var/opt/nomad/run/consul.sock
     state: present
     timeout: 10
 
 - name: Retrieve nodes from Consul to validate Consul is working
-  ansible.builtin.command:
-    argv:
-    - consul
-    - catalog
-    - nodes
-  environment:
-    CONSUL_HTTP_ADDR: unix:///var/opt/nomad/run/consul.sock
-    CONSUL_HTTP_TOKEN: "{{ ansible_facts['consul_token'] }}"
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/catalog/nodes
   register: consul_nodes
-  failed_when: "node_name not in consul_nodes.stdout or datacenter not in consul_nodes.stdout"
+  failed_when: "consul_nodes.json.0.Node != node_name or consul_nodes.json.0.Datacenter != datacenter"
+
+- name: Check if Consul token is stored in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/consul/token
+    status_code:
+    - 200
+    - 404
+  register: consul_token_present
+
+- name: Store Consul token in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ ansible_facts['consul_token'] }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/consul/token
+  when: consul_token_present.status == 404
