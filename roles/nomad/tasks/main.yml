@@ -1,0 +1,106 @@
+---
+#
+# Install Nomad and bootstrap ACLs
+# https://developer.hashicorp.com/nomad/tutorials/access-control/access-control-bootstrap
+#
+# Assumes Consul role already executed successfully
+#
+- name: Install Nomad
+  ansible.builtin.yum:
+    name:
+    - nomad
+    state: present
+
+- name: Write Nomad configuration file
+  ansible.builtin.template:
+    src: nomad.hcl
+    dest: /etc/nomad.d/nomad.hcl
+    owner: nomad
+    group: nomad
+    mode: '0600'
+    validate: nomad config validate %s
+  register: nomad_hcl_template
+
+- name: Start Nomad service
+  ansible.builtin.systemd_service:
+    name: nomad
+    state: started
+    enabled: true
+
+- name: Wait for Nomad to be available
+  ansible.builtin.wait_for:
+    port: 4646
+    state: started
+    timeout: 10
+
+- name: Check if Nomad token is stored in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    return_content: true
+    url: http://localhost/v1/kv/nomad/token
+    status_code:
+    - 200
+    - 404
+  register: nomad_token_present
+
+- name: Set Nomad token as fact
+  ansible.builtin.set_fact:
+    nomad_token: "{{ nomad_token_present.json.0.Value | b64decode }}"
+    cacheable: yes
+  when: nomad_token_present.status == 200
+
+- name: Bootstrap Nomad ACL
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: POST
+    return_content: true
+    url: http://127.0.0.1:4646/v1/acl/bootstrap
+  register: nomad_bootstrap
+  when: nomad_token_present.status == 404
+
+- name: Set Nomad token as fact
+  ansible.builtin.set_fact:
+    nomad_token: "{{ nomad_bootstrap.json.SecretID }}"
+    cacheable: yes
+  when: nomad_token_present.status == 404
+
+- name: Retrieve nodes from Nomad to validate Nomad is working
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/nodes
+
+- name: Store Nomad token in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ ansible_facts['nomad_token'] }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nomad/token
+    status_code: [200]
+  when: nomad_token_present.status == 404

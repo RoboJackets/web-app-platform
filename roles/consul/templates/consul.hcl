@@ -10,7 +10,7 @@ server = true
 
 bind_addr = "127.0.0.1"
 
-bootstrap_expect=1
+bootstrap_expect = 1
 
 acl {
   enabled = true
@@ -20,9 +20,9 @@ acl {
     agent = "{{ ansible_facts['consul_token'] }}"
   }
 {% endif %}
-{% if consul_bootstrap is defined and consul_bootstrap.parsed.SecretID != None %}
+{% if consul_bootstrap is defined and consul_bootstrap.json.SecretID != None %}
   tokens {
-    agent = "{{ consul_bootstrap.parsed.SecretID }}"
+    agent = "{{ consul_bootstrap.json.SecretID }}"
   }
 {% endif %}
 }
