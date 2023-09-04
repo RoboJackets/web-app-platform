@@ -1,6 +1,7 @@
 ---
 #
 # Issue a certificate from Let's Encrypt (or another ACME service)
+# https://github.com/acmesh-official/acme.sh
 #
 - name: Check to see if http-01 challenge passes from controller's perspective
   ansible.builtin.uri:

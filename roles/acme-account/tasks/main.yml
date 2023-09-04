@@ -1,6 +1,7 @@
 ---
 #
 # Create an account with Let's Encrypt (or another ACME service)
+# https://github.com/acmesh-official/acme.sh
 #
 - name: Check if an ACME account already exists for {{ acme_server }}
   ansible.builtin.uri:
