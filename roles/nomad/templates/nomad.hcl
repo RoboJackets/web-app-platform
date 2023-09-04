@@ -1,3 +1,5 @@
+{{ ansible_managed | comment }}
+
 datacenter = "{{ datacenter }}"
 
 data_dir = "/opt/nomad"
@@ -6,6 +8,10 @@ server {
   enabled = true
 
   bootstrap_expect = 1
+
+  default_scheduler_config {
+    memory_oversubscription_enabled = true
+  }
 }
 
 bind_addr = "127.0.0.1"
@@ -28,6 +34,10 @@ client {
 
   host_volume "run" {
     path = "/var/opt/nomad/run/"
+  }
+
+  host_volume "firewall_rules" {
+    path = "/var/opt/nomad/firewall_rules/"
   }
 }
 
@@ -59,10 +69,10 @@ plugin "docker" {
     # https://developer.hashicorp.com/nomad/docs/drivers/docker#allow_caps - defaults + sys_nice for mysql
     allow_caps = ["audit_write", "chown", "dac_override", "fowner", "fsetid", "kill", "mknod",
                   "net_bind_service", "setfcap", "setgid", "setpcap", "setuid", "sys_chroot", "sys_nice"]
-  }
 
-  volumes {
-    enabled = true
+    volumes {
+      enabled = true
+    }
   }
 }
 

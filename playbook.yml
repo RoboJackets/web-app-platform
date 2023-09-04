@@ -1,7 +1,17 @@
 ---
 - name: Bootstrap web app platform
-  hosts: platform
+  hosts: all
   roles:
   - docker
   - consul
   - nomad
+  - dhparam
+  - self-signed-certificate
+  - acme-account
+  - clean-stuck-jobs
+  - docker-system-prune
+  - firewall-rules
+  - vouch
+  - nginx
+  - acme-issuance
+  - nginx

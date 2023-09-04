@@ -1,3 +1,5 @@
+{{ ansible_managed | comment }}
+
 datacenter = "{{ datacenter }}"
 
 data_dir = "/opt/consul"

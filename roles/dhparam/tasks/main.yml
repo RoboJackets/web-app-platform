@@ -1,0 +1,38 @@
+---
+#
+# Generate Diffie-Hellman parameters
+# https://wiki.openssl.org/index.php/Diffie-Hellman_parameters
+#
+- name: Create dhparam Docker volume
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: POST
+    return_content: true
+    url: http://localhost/v1.43/volumes/create
+    body:
+      Name: dhparam
+    body_format: json
+    status_code:
+    - 201
+  register: docker_volume
+
+- name: Generate Diffie-Hellman parameters - this will take several minutes, be patient, drink some water
+  ansible.builtin.command:
+    argv:
+    - openssl
+    - dhparam
+    - -out
+    - "{{ docker_volume.json.Mountpoint }}/dhparam.pem"
+    - 4096
+    creates: "{{ docker_volume.json.Mountpoint }}/dhparam.pem"
+
+- name: Set permissions on Diffie-Hellman parameters
+  ansible.builtin.file:
+    path: "{{ docker_volume.json.Mountpoint }}/dhparam.pem"
+    state: file
+    mode: '0444'

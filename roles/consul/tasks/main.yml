@@ -41,7 +41,7 @@
     dest: /etc/consul.d/consul.hcl
     owner: consul
     group: consul
-    mode: '0600'
+    mode: '0400'
     validate: consul validate -config-format=hcl %s
   register: consul_hcl_template
 
@@ -51,43 +51,47 @@
     state: directory
     mode: '0777'
 
-- name: Start Consul service
-  ansible.builtin.systemd_service:
-    name: consul
-    state: started
-    enabled: false
+- name: Bootstrap Consul
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+  block:
 
-- name: Wait for Consul socket to be available
-  ansible.builtin.wait_for:
-    path: /var/opt/nomad/run/consul.sock
-    state: present
-    timeout: 10
-  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+  - name: Start Consul service
+    ansible.builtin.systemd_service:
+      name: consul
+      state: started
+      enabled: false
 
-- name: Bootstrap Consul ACL
-  ansible.builtin.uri:
-    follow_redirects: none
-    force: true
-    method: PUT
-    return_content: true
-    unix_socket: /var/opt/nomad/run/consul.sock
-    url: http://localhost/v1/acl/bootstrap
-    use_netrc: false
-    use_proxy: false
-    validate_certs: false
-  register: consul_bootstrap
-  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+  - name: Wait for Consul socket to be available
+    ansible.builtin.wait_for:
+      path: /var/opt/nomad/run/consul.sock
+      state: present
+      timeout: 10
 
-- name: Write Consul configuration file with token
-  ansible.builtin.template:
-    src: consul.hcl
-    dest: /etc/consul.d/consul.hcl
-    owner: consul
-    group: consul
-    mode: '0600'
-    validate: consul validate -config-format=hcl %s
-  when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
+  - name: Bootstrap Consul ACL
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      method: PUT
+      return_content: true
+      unix_socket: /var/opt/nomad/run/consul.sock
+      url: http://localhost/v1/acl/bootstrap
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+    register: consul_bootstrap
+    # the raft leader election may not have completed at this point so bootstrap may fail
+    retries: 2
+    delay: 5
+    until: consul_bootstrap.status == 200
+
+  - name: Write Consul configuration file with token
+    ansible.builtin.template:
+      src: consul.hcl
+      dest: /etc/consul.d/consul.hcl
+      owner: consul
+      group: consul
+      mode: '0400'
+      validate: consul validate -config-format=hcl %s
 
 - name: Stop Consul service
   ansible.builtin.systemd_service:

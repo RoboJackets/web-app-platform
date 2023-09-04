@@ -1,0 +1,92 @@
+---
+#
+# Clean up "stuck" jobs in Nomad
+# Later roles and/or other mechanisms are responsible for restoring any jobs that are removed by this role
+#
+- name: Retrieve currently registered service jobs within Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/jobs?filter=Type%3D%3Dservice
+  register: nomad_service_jobs
+
+- name: Get node information
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/nodes
+  register: nomad_nodes_list
+
+- name: Mark node ineligible for scheduling
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    body:
+      Eligibility: ineligible
+    body_format: json
+    url: http://127.0.0.1:4646/v1/node/{{ nomad_nodes_list.json[0].ID }}/eligibility
+  register: mark_node_ineligible
+  when: (nomad_service_jobs.json | length) > 0 and nomad_nodes_list.json[0].SchedulingEligibility == "eligible"
+  changed_when: true
+
+- name: Loop over jobs
+  include_tasks: clean-stuck-job.yml
+  loop: "{{ nomad_service_jobs.json }}"
+
+- name: Run garbage collection
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: PUT
+    url: http://127.0.0.1:4646/v1/system/gc
+  when: "'needs_nomad_garbage_collection' in ansible_facts"
+
+- name: Wait 10 seconds for garbage collection to complete
+  ansible.builtin.pause:
+    seconds: 10
+  when: "'needs_nomad_garbage_collection' in ansible_facts"
+
+- name: Mark node eligible for scheduling
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    body:
+      Eligibility: eligible
+    body_format: json
+    url: http://127.0.0.1:4646/v1/node/{{ nomad_nodes_list.json[0].ID }}/eligibility
+  when: (nomad_nodes_list.json[0].SchedulingEligibility == "ineligible") or (mark_node_ineligible.status is defined)
+  changed_when: true

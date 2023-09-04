@@ -1,0 +1,403 @@
+---
+#
+# Manages the nginx job within Nomad
+# https://nginx.org/
+#
+- name: Check for existing hostnames map within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/hostnames
+    status_code:
+    - 200
+    - 404
+  register: hostnames_map
+
+- name: Store initial hostnames map within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      # consul is deliberately not included here because its service registration is weird and different
+      # so we have to manually configure the whole thing
+      nomad: "nomad.{{ datacenter }}.robojackets.net"
+      registry: "registry.{{ datacenter }}.robojackets.net"
+      vouch: "vouch.{{ datacenter }}.robojackets.net"
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/hostnames
+  when: hostnames_map.status == 404
+  changed_when: true
+
+- name: Check for existing baseline config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/config/00-baseline
+    status_code:
+    - 200
+    - 404
+  register: baseline_config
+
+- name: Store baseline config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.template', './00-baseline.conf') }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/config/00-baseline
+  when: baseline_config.status == 404 or lookup('ansible.builtin.template', './00-baseline.conf') != (baseline_config.json.0.Value | b64decode)
+  changed_when: true
+
+- name: Retrieve ACME account thumbprint from Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
+  register: acme_account_thumbprint_consul
+
+- name: Check for existing default HTTP server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/config/01-default-http
+    status_code:
+    - 200
+    - 404
+  register: default_http
+
+- name: Store default HTTP server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.template', './01-default-http.conf') }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/config/01-default-http
+  when: default_http.status == 404 or lookup('ansible.builtin.template', './01-default-http.conf') != (default_http.json.0.Value | b64decode)
+  changed_when: true
+
+- name: Check for existing default HTTPS server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/config/02-default-https
+    status_code:
+    - 200
+    - 404
+  register: default_https
+
+- name: Store default HTTPS server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.template', './02-default-https.conf') }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/config/02-default-https
+  when: default_https.status == 404 or lookup('ansible.builtin.template', './02-default-https.conf') != (default_https.json.0.Value | b64decode)
+  changed_when: true
+
+- name: Check if Vouch is available
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/health/checks/vouch
+  register: vouch_service_status
+
+- name: Check for existing Consul server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/config/03-consul
+    status_code:
+    - 200
+    - 404
+  register: consul_server
+
+- name: Store Consul server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.template', './03-consul.conf') }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/config/03-consul
+  when: consul_server.status == 404 or lookup('ansible.builtin.template', './03-consul.conf') != (consul_server.json.0.Value | b64decode)
+  changed_when: true
+
+- name: Check for existing Nomad server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/nginx/config/04-nomad
+    status_code:
+    - 200
+    - 404
+  register: nomad_server
+
+- name: Store Nomad server config within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.template', './04-nomad.conf') }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/nginx/config/04-nomad
+  when: nomad_server.status == 404 or lookup('ansible.builtin.template', './04-nomad.conf') != (nomad_server.json.0.Value | b64decode)
+  changed_when: true
+
+- name: Create assets Docker volume
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: POST
+    return_content: true
+    url: http://localhost/v1.43/volumes/create
+    body:
+      Name: assets
+    body_format: json
+    status_code:
+    - 201
+  register: assets_volume
+
+- name: Set permissions on assets volume
+  ansible.builtin.file:
+    path: "{{ docker_volume.json.Mountpoint }}/"
+    state: directory
+    mode: '0777'
+
+- name: Check for ACME certificate from {{ acme_server }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    status_code:
+    - 200
+    - 404
+  register: acme_certificate_volume
+
+- name: Check to make sure CA certificate is loaded in the volume
+  ansible.builtin.stat:
+    path: "{{ acme_certificate_volume.json.Mountpoint }}/ca.pem"
+  when: acme_certificate_volume.status == 200
+  register: ca_cert
+
+- name: Check to make sure chained server certificate is loaded in the volume
+  ansible.builtin.stat:
+    path: "{{ acme_certificate_volume.json.Mountpoint }}/fullchain.pem"
+  when: acme_certificate_volume.status == 200
+  register: server_cert
+
+- name: Check to make sure private key is loaded in the volume
+  ansible.builtin.stat:
+    path: "{{ acme_certificate_volume.json.Mountpoint }}/key.pem"
+  when: acme_certificate_volume.status == 200
+  register: key
+
+- name: Generate job submission JSON
+  ansible.builtin.command:
+    argv:
+    - nomad
+    - job
+    - run
+    - -no-color
+    - -output
+    - -var
+    - region={{ region }}
+    - -var
+    - datacenter={{ datacenter }}
+    - -var
+    - certificate_volume={% if acme_certificate_volume.status == 200 and ca_cert.stat.exists and server_cert.stat.exists and key.stat.exists %}acme-certificate-{{ acme_server }}{% else %}self-signed-certificate{% endif %}
+    - "-"
+    stdin: "{{ lookup('ansible.builtin.file', './nginx.nomad') }}"
+  register: nomad_job_json
+  changed_when: false
+
+- name: Submit job to Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    body: "{{ nomad_job_json.stdout }}"
+    body_format: json
+    method: POST
+    url: http://127.0.0.1:4646/v1/jobs
+  register: job_register_output
+
+- name: List allocations for evaluation
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/evaluation/{{ job_register_output.json.EvalID }}/allocations
+  register: allocations_output
+
+- name: Wait for container to start
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/allocation/{{ allocations_output.json[0].ID }}
+  register: allocation_output
+  until: allocation_output.json.TaskStates.nginx.State == "running"
+  retries: 5
+  delay: 2
+  when: (allocations_output.json | length) > 0
+
+- name: Wait for port 80 to be listening
+  ansible.builtin.wait_for:
+    port: 80
+    timeout: 30
+
+- name: Wait for port 443 to be listening
+  ansible.builtin.wait_for:
+    port: 443
+    timeout: 30
+
+- name: Wait for health checks in Consul to be passing
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/health/checks/nginx
+  register: service_status
+  until: service_status.json[0].Status == "passing" and service_status.json[1].Status == "passing"
+  retries: 5
+  delay: 2

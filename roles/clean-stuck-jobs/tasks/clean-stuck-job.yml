@@ -1,0 +1,38 @@
+---
+#
+# Clean up a single stuck job, for use in a loop
+#
+- name: Check {{ item.Name }} health in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/health/checks/{{ item.Name }}
+  register: service_status
+
+- name: Stop and purge {{ item.Name }} job
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: DELETE
+    url: http://127.0.0.1:4646/v1/job/{{ item.Name }}?purge=true
+  when: (service_status.json | length) == 0 or service_status.json[0].Status != "passing"
+
+- name: Request garbage collection at end of loop
+  ansible.builtin.set_fact:
+    needs_nomad_garbage_collection: true
+    cacheable: yes
+  when: (service_status.json | length) == 0 or service_status.json[0].Status != "passing"

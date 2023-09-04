@@ -5,11 +5,41 @@
 #
 # Assumes Consul role already executed successfully
 #
+- name: Create /var/opt/nomad/firewall_rules/
+  ansible.builtin.file:
+    path: /var/opt/nomad/firewall_rules/
+    state: directory
+    mode: '0555'
+
+- name: Create /root/.docker/
+  ansible.builtin.file:
+    path: /root/.docker/
+    state: directory
+    mode: '0500'
+
+- name: Write placeholder Docker config file
+  ansible.builtin.copy:
+    content: "{}"
+    dest: /root/.docker/config.json
+    force: false
+    owner: root
+    group: root
+    mode: '0400'
+
 - name: Install Nomad
   ansible.builtin.yum:
     name:
     - nomad
     state: present
+
+- name: Write Nomad service file
+  ansible.builtin.template:
+    src: nomad.service
+    dest: /lib/systemd/system/nomad.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: nomad_service
 
 - name: Write Nomad configuration file
   ansible.builtin.template:
@@ -17,9 +47,17 @@
     dest: /etc/nomad.d/nomad.hcl
     owner: nomad
     group: nomad
-    mode: '0600'
+    mode: '0400'
     validate: nomad config validate %s
   register: nomad_hcl_template
+
+- name: Stop Nomad service
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    name: nomad
+    state: stopped
+    enabled: false
+  when: nomad_service.changed or nomad_hcl_template.changed
 
 - name: Start Nomad service
   ansible.builtin.systemd_service:
@@ -69,6 +107,10 @@
     url: http://127.0.0.1:4646/v1/acl/bootstrap
   register: nomad_bootstrap
   when: nomad_token_present.status == 404
+  # the raft leader election may not have completed at this point so bootstrap may fail
+  retries: 2
+  delay: 5
+  until: nomad_bootstrap.status == 200
 
 - name: Set Nomad token as fact
   ansible.builtin.set_fact:

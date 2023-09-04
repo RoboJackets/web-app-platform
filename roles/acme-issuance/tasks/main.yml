@@ -1,0 +1,145 @@
+---
+#
+# Issue a certificate from Let's Encrypt (or another ACME service)
+#
+- name: Check to see if http-01 challenge passes from controller's perspective
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: http://{{ fully_qualified_domain_name }}/.well-known/acme-challenge/ansible-test
+    status_code:
+    - 200
+    timeout: 5
+  delegate_to: 127.0.0.1
+  ignore_errors: true
+  register: acme_challenge_test
+
+- name: Check if a volume is already created for {{ acme_server }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    status_code:
+    - 200
+    - 404
+  register: acme_certificate_volume
+  when: not (acme_challenge_test is failed)
+
+- name: Check if a certificate was already issued from {{ acme_server }}
+  ansible.builtin.stat:
+    path: "{{ acme_certificate_volume.json.Mountpoint }}/fullchain.pem"
+  when: acme_certificate_volume.status == 200 and not (acme_challenge_test is failed)
+  register: server_cert
+
+- name: Request certificate issuance
+  when: not (acme_challenge_test is failed) and (acme_certificate_volume.status == 404 or not server_cert.stat.exists)
+  block:
+
+  - name: Retrieve ACME account thumbprint from Consul
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      return_content: true
+      unix_socket: /var/opt/nomad/run/consul.sock
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      headers:
+        X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+      method: GET
+      url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
+    register: acme_account_thumbprint_consul
+
+  - name: Fail if nginx did not return the expected challenge response
+    ansible.builtin.fail:
+      msg: Nginx did not return the expected response for the ACME http-01 challenge. Issuance would not be successful.
+    when: acme_challenge_test.status != 200 or acme_challenge_test.content != "ansible-test."+(acme_account_thumbprint_consul.json.0.Value | b64decode)
+
+  - name: Prompt for Hurricane Electric username
+    ansible.builtin.pause:
+      prompt: Please enter the username to use with Hurricane Electric to complete ACME dns-01 challenges
+    register: hurricane_electric_username
+
+  - name: Prompt for Hurricane Electric password
+    ansible.builtin.pause:
+      prompt: Please enter the password to use with Hurricane Electric to complete ACME dns-01 challenges
+    register: hurricane_electric_password
+
+  - name: Verify Hurricane Electric credentials
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      return_content: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: true
+      body:
+        email: "{{ hurricane_electric_username.user_input }}"
+        pass: "{{ hurricane_electric_password.user_input }}"
+        submit: Login!
+      body_format: form-urlencoded
+      method: POST
+      url: https://dns.he.net
+    delegate_to: 127.0.0.1
+    register: hurricane_electric_login
+    failed_when: >-
+      "Zone Management" not in hurricane_electric_login.content
+
+  - name: Issue a certificate from {{ acme_server }} - this will take a few minutes, be patient, drink some water
+    ansible.builtin.command:
+      argv:
+      - docker
+      - run
+      - --pull
+      - always
+      - --rm
+      - --network
+      - host
+      - --read-only
+      - --rm
+      - --mount
+      - type=volume,source=acme-account-{{ acme_server }},destination=/acme.sh/
+      - --mount
+      - type=volume,source=acme-certificate-{{ acme_server }},destination=/certificate/
+      - --env
+      - HE_Username={{ hurricane_electric_username.user_input }}
+      - --env
+      - HE_Password={{ hurricane_electric_password.user_input }}
+      - neilpang/acme.sh
+      - --issue
+      - --server
+      - "{{ acme_server }}"
+      - --domain
+      - "{{ fully_qualified_domain_name }}"
+      - --stateless
+      - --domain
+      - "*.{{ datacenter }}.robojackets.net"
+      - --dns
+      - dns_he
+      - --domain
+      - "*.robojackets.org"
+      - --dns
+      - dns_he
+      - --keylength
+      - ec-384
+      - --cert-file
+      - /certificate/cert.pem
+      - --key-file
+      - /certificate/key.pem
+      - --ca-file
+      - /certificate/ca.pem
+      - --fullchain-file
+      - /certificate/fullchain.pem
+      - --ocsp-must-staple
+      - --ecc
