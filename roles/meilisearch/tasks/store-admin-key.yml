@@ -1,0 +1,21 @@
+---
+#
+# Stores the default admin key for a given Meilisearch version in Consul
+# This is a little wonky because I didn't want to require installing JMESPath which is the probably-simpler way to do this
+#
+- name: Store admin key in Consul for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ meilisearch_key.key }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/meilisearch/admin-key-v{{ meilisearch_version }}
+  changed_when: true
+  when: meilisearch_key.name == "Default Admin API Key"
