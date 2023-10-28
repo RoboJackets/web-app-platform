@@ -1,0 +1,76 @@
+---
+#
+# Create an account with Let's Encrypt (or another ACME service)
+# https://github.com/acmesh-official/acme.sh
+#
+- name: Check if an ACME account already exists for {{ acme_server }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: http://localhost/v1.43/volumes/acme-account-{{ acme_server }}
+    status_code:
+    - 200
+    - 404
+  register: acme_volume
+
+- name: Register an ACME account with {{ acme_server }}
+  ansible.builtin.command:
+    argv:
+    - docker
+    - run
+    - --pull
+    - always
+    - --rm
+    - --network
+    - host
+    - --read-only
+    - --rm
+    - --mount
+    - type=volume,source=acme-account-{{ acme_server }},destination=/acme.sh/
+    - neilpang/acme.sh
+    - --register-account
+    - --server
+    - "{{ acme_server }}"
+    - --accountkeylength
+    - 4096
+    - --email
+    - "{{ owner_contact_email }}"
+  register: acme_output
+  when: acme_volume.status == 404
+
+- name: Store ACME account thumbprint in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: >-
+      {{ acme_output.stdout | regex_search("ACCOUNT_THUMBPRINT='(.+)'", '\1') | first }}
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
+  when: acme_volume.status == 404
+
+- name: Verify ACME account thumbprint is in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint

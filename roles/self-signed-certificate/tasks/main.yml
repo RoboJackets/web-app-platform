@@ -1,0 +1,69 @@
+---
+#
+# Generate a self-signed certificate for use with bootstrapping Nginx
+# https://unix.stackexchange.com/a/104305
+#
+- name: Create self-signed-certificate Docker volume
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: POST
+    return_content: true
+    url: http://localhost/v1.43/volumes/create
+    body:
+      Name: self-signed-certificate
+    body_format: json
+    status_code:
+    - 201
+  register: docker_volume
+
+- name: Generate self-signed certificate
+  ansible.builtin.command:
+    argv:
+    - openssl
+    - req
+    - -new
+    - -newkey
+    - rsa:4096
+    - -days
+    - 365
+    - -nodes
+    - -x509
+    - -subj
+    - "/C=US/ST=Georgia/L=Atlanta/O=RoboJackets/CN={{ fully_qualified_domain_name }}"
+    - -keyout
+    - "{{ docker_volume.json.Mountpoint }}/key.pem"
+    - -out
+    - "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
+    creates: "{{ docker_volume.json.Mountpoint }}/key.pem"
+
+- name: Set permissions on volume
+  ansible.builtin.file:
+    path: "{{ docker_volume.json.Mountpoint }}/"
+    state: directory
+    mode: '0555'
+
+- name: Set permissions on private key
+  ansible.builtin.file:
+    path: "{{ docker_volume.json.Mountpoint }}/key.pem"
+    state: file
+    mode: '0444'
+
+- name: Set permissions on certificate
+  ansible.builtin.file:
+    path: "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
+    state: file
+    mode: '0444'
+
+- name: Copy certificate as CA certificate for Nginx configuration
+  ansible.builtin.copy:
+    dest: "{{ docker_volume.json.Mountpoint }}/ca.pem"
+    force: false
+    mode: preserve
+    remote_src: true
+    src: "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
+    validate: openssl x509 -in %s -text -noout

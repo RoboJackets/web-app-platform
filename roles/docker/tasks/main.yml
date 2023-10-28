@@ -62,3 +62,4 @@
     - --read-only
     - --rm
     - hello-world
+  changed_when: false
