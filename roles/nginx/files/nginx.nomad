@@ -35,9 +35,12 @@ job "nginx" {
       port "http" {
         static = 80
       }
+
       port "https" {
         static = 443
       }
+
+      port "vouch-stub" {}
     }
 
     task "nginx" {
@@ -101,7 +104,7 @@ job "nginx" {
       driver = "docker"
 
       resources {
-        cpu = 1000
+        cpu = 100
         memory = 512
         memory_max = 1024
       }
@@ -143,9 +146,23 @@ upstream {{ .Name }} {
 {{- end -}}
 {{ if not (service "vouch") }}
 upstream vouch {
-  server 127.0.0.1:65535 down;
+  server 127.0.0.1:{{ env "NOMAD_PORT_vouch_stub" }};
 }
 {{ end }}
+server {
+  server_name _;
+
+  listen {{ env "NOMAD_PORT_vouch_stub" }} default_server;
+  listen [::]:{{ env "NOMAD_PORT_vouch_stub" }} default_server;
+
+  location = /validate {
+    return 401;
+  }
+
+  location / {
+    return 503;
+  }
+}
 {{ range safeLs "nginx/config" }}
 {{ .Value }}
 {{ end }}
@@ -155,6 +172,12 @@ server {
 
   listen {{ env "NOMAD_PORT_http" }};
   listen [::]:{{ env "NOMAD_PORT_http" }};
+
+  location = /robots.txt {
+    default_type text/plain;
+    return 200 "User-agent: *\nDisallow: /";
+    allow all;
+  }
 
   return 301 https://{{ $hostname }}$request_uri;
 }
@@ -172,6 +195,12 @@ server {
   http3_hq on;
 
   return 503;
+
+  location = /robots.txt {
+    default_type text/plain;
+    return 200 "User-agent: *\nDisallow: /";
+    allow all;
+  }
 
   add_header X-Frame-Options DENY always;
   add_header X-Content-Type-Options nosniff always;
@@ -193,6 +222,12 @@ server {
   listen [::]:{{ env "NOMAD_PORT_https" }} quic;
   http3 on;
   http3_hq on;
+
+  location = /robots.txt {
+    default_type text/plain;
+    return 200 "User-agent: *\nDisallow: /";
+    allow all;
+  }
 
   root /assets/{{ $service }};
 

@@ -144,3 +144,109 @@
       - /certificate/fullchain.pem
       - --ocsp-must-staple
       - --ecc
+
+- name: Check if a volume is created for {{ acme_server }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    unix_socket: /var/run/docker.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    status_code:
+    - 200
+    - 404
+  register: acme_certificate_volume
+  when: not (acme_challenge_test is failed)
+
+- name: Check if a certificate was already issued from {{ acme_server }}
+  ansible.builtin.stat:
+    path: "{{ acme_certificate_volume.json.Mountpoint }}/fullchain.pem"
+  when: acme_certificate_volume.status == 200 and not (acme_challenge_test is failed)
+  register: server_cert
+
+- name: Manage renewal job
+  when: acme_certificate_volume.status == 200 and server_cert.stat.exists
+  block:
+
+  - name: Generate renewal job JSON
+    ansible.builtin.command:
+      argv:
+      - nomad
+      - job
+      - run
+      - -no-color
+      - -output
+      - -var
+      - region={{ region }}
+      - -var
+      - datacenter={{ datacenter }}
+      - -var
+      - acme-server={{ acme_server }}
+      - "-"
+      stdin: "{{ lookup('ansible.builtin.file', './acme-renew.nomad') }}"
+    register: nomad_job_json
+    changed_when: false
+
+  - name: Submit renewal job to Nomad
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      return_content: true
+      headers:
+        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+      body: "{{ nomad_job_json.stdout }}"
+      body_format: json
+      method: POST
+      url: http://127.0.0.1:4646/v1/jobs
+
+  - name: Force launch the job
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      return_content: true
+      headers:
+        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+      method: POST
+      url: http://127.0.0.1:4646/v1/job/acme-renew/periodic/force
+    register: force_launch_output
+
+  - name: List allocations for evaluation
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      return_content: true
+      headers:
+        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+      method: GET
+      url: http://127.0.0.1:4646/v1/evaluation/{{ force_launch_output.json.EvalID }}/allocations
+    register: evaluation_output
+
+  - name: Wait for allocation to complete
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      return_content: true
+      headers:
+        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+      method: GET
+      url: http://127.0.0.1:4646/v1/allocation/{{ evaluation_output.json[0].ID }}
+    register: allocation_output
+    until: allocation_output.json.ClientStatus == "complete"
+    retries: 5
+    delay: 2

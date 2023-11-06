@@ -1,0 +1,159 @@
+---
+#
+# Deploys a single version of Meilisearch, for use in a loop
+#
+- name: Generate v{{ meilisearch_version }} job submission JSON
+  ansible.builtin.command:
+    argv:
+    - nomad
+    - job
+    - run
+    - -no-color
+    - -output
+    - -var
+    - region={{ region }}
+    - -var
+    - datacenter={{ datacenter }}
+    - -var
+    - version={{ meilisearch_version }}
+    - "-"
+    stdin: "{{ lookup('ansible.builtin.file', './meilisearch.nomad') }}"
+  register: nomad_job_json
+  changed_when: false
+
+- name: Submit v{{ meilisearch_version }} job to Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    body: "{{ nomad_job_json.stdout | from_json | combine({'Job': {'ID': 'meilisearch-v' + meilisearch_version|string|replace('.','-'), 'Name': 'meilisearch-v' + meilisearch_version|string|replace('.','-')}}, recursive=true) }}"
+    body_format: json
+    method: POST
+    url: http://127.0.0.1:4646/v1/jobs
+  register: job_register_output
+
+- name: List allocations for evaluation for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/evaluation/{{ job_register_output.json.EvalID }}/allocations
+  register: allocations_output
+
+- name: Wait for container to start for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/allocation/{{ allocations_output.json[0].ID }}
+  register: allocation_output
+  until: allocation_output.json.TaskStates.meilisearch.State == "running"
+  retries: 5
+  delay: 2
+  when: (allocations_output.json | length) > 0
+
+- name: Wait for health checks in Consul to be passing for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/health/checks/meilisearch-v{{ meilisearch_version|replace('.','-') }}
+  register: service_status
+  until: service_status.json[0].Status == "passing"
+  retries: 5
+  delay: 2
+
+- name: Check if admin key for v{{ meilisearch_version }} has been loaded in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/meilisearch/admin-key-v{{ meilisearch_version }}
+    status_code:
+    - 200
+    - 404
+  register: meilisearch_master_key
+
+- name: Store admin key in Consul
+  when: meilisearch_master_key.status == 404
+  block:
+
+  - name: Get service information from Consul
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      return_content: true
+      unix_socket: /var/opt/nomad/run/consul.sock
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      headers:
+        X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+      method: GET
+      url: http://localhost/v1/catalog/service/meilisearch-v{{ meilisearch_version|replace('.','-') }}
+    register: meilisearch_service
+
+  - name: Retrieve keys from v{{ meilisearch_version }}
+    ansible.builtin.uri:
+      follow_redirects: none
+      force: true
+      return_content: true
+      use_netrc: false
+      use_proxy: false
+      validate_certs: false
+      headers:
+        Authorization: "Bearer {{ ansible_facts['meilisearch_master_key'] }}"
+      method: GET
+      url: http://127.0.0.1:{{ meilisearch_service.json.0.ServicePort }}/keys
+    register: meilisearch_keys
+
+  - name: Loop over keys from v{{ meilisearch_version }}
+    include_tasks: store-admin-key.yml
+    loop: "{{ meilisearch_keys.json.results }}"
+    loop_control:
+      loop_var: meilisearch_key
+
+- name: Check if admin key for v{{ meilisearch_version }} has been loaded in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/meilisearch/admin-key-v{{ meilisearch_version }}

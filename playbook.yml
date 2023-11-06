@@ -13,5 +13,15 @@
   - firewall-rules
   - vouch
   - nginx
+  # Roles prior to this point are required for baseline functions
+  # If you are running this on a system that is not directly accessible from the internet,
+  # comment out acme-issuance and the second nginx invocation below.
   - acme-issuance
   - nginx
+  # Roles below this point are application-specific; mix and match as needed
+  - registry
+  - redis
+  - mysql
+  - meilisearch
+  - tika
+  - batch-jobs

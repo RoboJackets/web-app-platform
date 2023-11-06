@@ -401,3 +401,39 @@
   until: service_status.json[0].Status == "passing" and service_status.json[1].Status == "passing"
   retries: 5
   delay: 2
+
+- name: Ping Nomad from controller to grant access to control plane web UIs
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: https://{{ ansible_host }}/v1/acl/token/self
+    headers:
+      Host: nomad.{{ datacenter }}.robojackets.net
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    status_code:
+    - 200
+    timeout: 5
+  delegate_to: 127.0.0.1
+
+- name: Ping Consul from controller to grant access to control plane web UIs
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    method: GET
+    return_content: true
+    url: https://{{ ansible_host }}/v1/acl/token/self
+    headers:
+      Host: consul.{{ datacenter }}.robojackets.net
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    status_code:
+    - 200
+    timeout: 5
+  delegate_to: 127.0.0.1

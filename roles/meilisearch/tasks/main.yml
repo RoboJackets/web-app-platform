@@ -1,0 +1,66 @@
+---
+#
+# Deploy Meilisearch, used for search for Laravel apps
+# Multiple versions can be deployed independently to allow for seamless-ish updates
+# https://www.meilisearch.com/
+#
+- name: Check if a master key has been loaded in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/meilisearch/master-key
+    status_code:
+    - 200
+    - 404
+  register: meilisearch_master_key
+
+- name: Store master key in Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body: "{{ lookup('ansible.builtin.password', 'credentials/meilisearch-master-key', chars=['ascii_letters', 'digits'], length=128) }}"
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/kv/meilisearch/master-key
+  changed_when: true
+  when: meilisearch_master_key.status == 404
+
+- name: Read master key from Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/kv/meilisearch/master-key
+  register: meilisearch_master_key
+
+- name: Set master key as fact
+  ansible.builtin.set_fact:
+    meilisearch_master_key: "{{ meilisearch_master_key.json.0.Value | b64decode }}"
+    cacheable: yes
+
+- name: Loop over versions
+  include_tasks: deploy-single-version.yml
+  loop: "{{ meilisearch_versions }}"
+  loop_control:
+    loop_var: meilisearch_version
