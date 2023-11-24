@@ -6,8 +6,8 @@
 - name: Add HashiCorp repository
   ansible.builtin.yum_repository:
     name: hashicorp
-    description: Hashicorp Stable - $basearch
-    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
+    description: Hashicorp Test - $basearch
+    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/test
     enabled: true
     gpgcheck: true
     gpgkey: https://rpm.releases.hashicorp.com/gpg
@@ -50,6 +50,14 @@
     path: /var/opt/nomad/run/
     state: directory
     mode: '0777'
+
+- name: Create tmpfs for /var/opt/nomad/run/
+  ansible.posix.mount:
+    path: /var/opt/nomad/run/
+    src: tmpfs
+    fstype: tmpfs
+    state: mounted
+    opts: rw,nosuid,nodev,noexec,noatime,seclabel,size=16k
 
 - name: Bootstrap Consul
   when: "'consul_token' not in ansible_facts or ansible_facts['consul_token'] == None"
