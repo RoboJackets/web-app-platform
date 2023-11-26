@@ -12,6 +12,8 @@ server {
   default_scheduler_config {
     memory_oversubscription_enabled = true
   }
+
+  oidc_issuer = "https://nomad.{{ datacenter }}.robojackets.net"
 }
 
 bind_addr = "127.0.0.1"
