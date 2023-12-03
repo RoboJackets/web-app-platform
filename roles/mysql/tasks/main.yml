@@ -31,7 +31,7 @@
     use_netrc: false
     use_proxy: false
     validate_certs: false
-    body: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_letters', 'digits'], length=128) }}"
+    body: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_letters', 'digits'], length=64) }}"
     headers:
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     method: PUT
@@ -100,7 +100,7 @@
     url: http://127.0.0.1:4646/v1/allocation/{{ allocations_output.json[0].ID }}
   register: allocation_output
   until: allocation_output.json.TaskStates.mysql.State == "running"
-  retries: 5
+  retries: 10
   delay: 2
   when: (allocations_output.json | length) > 0
 

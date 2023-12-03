@@ -56,12 +56,15 @@ job "mysql" {
       }
 
       template {
-        data = <<EOH
-MYSQL_ROOT_PASSWORD={{- key "mysql/root_password" -}}
-EOH
+        data = <<EOF
+{{- key "mysql/root_password" -}}
+EOF
 
-        destination = "/secrets/.env"
-        env = true
+        destination = "/secrets/root_password"
+      }
+
+      env {
+        MYSQL_ROOT_PASSWORD_FILE = "${NOMAD_SECRETS_DIR}/root_password"
       }
 
       resources {
