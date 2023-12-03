@@ -22,7 +22,7 @@
 
 - name: Check for required keys in configuration
   ansible.builtin.fail:
-    msg: Backup configuration has been loaded in Consul but is missing some required parameters. Check to make sure MYSQL_DATABASES, MYSQL_IGNORE_TABLES, DOCKER_VOLUMES, AWS_ROLE_ARN, and AWS_S3_LOCATION are all present in the map.
+    msg: Backup configuration has been loaded in Consul but is missing some required parameters. Check to make sure MYSQLDUMP_SCOPE, DOCKER_VOLUMES, AWS_ROLE_ARN, and AWS_S3_LOCATION are all present in the map.
   when: >-
     backup_config.status == 200 and (
       ("MYSQLDUMP_SCOPE" not in (backup_config.json.0.Value | b64decode | from_json))
