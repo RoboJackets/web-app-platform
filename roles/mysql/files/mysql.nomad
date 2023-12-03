@@ -57,7 +57,7 @@ job "mysql" {
 
       template {
         data = <<EOF
-{{- key "mysql/root_password" -}}
+{{- key "mysql/root_password" | trimSpace -}}
 EOF
 
         destination = "/secrets/root_password"
