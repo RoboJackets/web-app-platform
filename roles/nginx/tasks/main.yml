@@ -269,7 +269,7 @@
 
 - name: Set permissions on assets volume
   ansible.builtin.file:
-    path: "{{ docker_volume.json.Mountpoint }}/"
+    path: "{{ assets_volume.json.Mountpoint }}/"
     state: directory
     mode: '0777'
 
