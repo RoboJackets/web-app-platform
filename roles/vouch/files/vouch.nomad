@@ -33,7 +33,7 @@ job "vouch" {
 
       template {
         data = <<EOH
-{{- range $key, $value := (key "vouch" | parseJSON) -}}
+{{- range $key, $value := (key "vouch/config" | parseJSON) -}}
 {{- $key | trimSpace -}}={{- $value | toJSON }}
 {{ end -}}
 VOUCH_PORT={{ env "NOMAD_PORT_http" }}
@@ -81,7 +81,7 @@ EOH
         }
 
         meta {
-          nginx-config = "location / {proxy_pass http://vouch;proxy_set_header Host $http_host;} location /static/ {proxy_pass http://vouch;proxy_pass_request_headers off;proxy_pass_request_body off;proxy_cache vouch_assets;proxy_cache_valid 24h;add_header X-Cache-Status $upstream_cache_status;}"
+          nginx-config = "location / {proxy_pass http://vouch;proxy_set_header Host $host;} location /static/ {proxy_pass http://vouch;proxy_pass_request_headers off;proxy_pass_request_body off;proxy_cache vouch_assets;proxy_cache_valid 24h;add_header X-Cache-Status $upstream_cache_status;}"
           firewall-rules = jsonencode(["internet"])
         }
       }

@@ -15,7 +15,7 @@
     headers:
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     method: GET
-    url: http://localhost/v1/kv/vouch
+    url: http://localhost/v1/kv/vouch/config
     status_code:
     - 200
   register: vouch_config
