@@ -103,17 +103,19 @@ EOH
       }
 
       restart {
-        attempts = 1
+        attempts = 5
         delay = "10s"
         interval = "1m"
         mode = "fail"
       }
     }
+  }
 
-    reschedule {
-      attempts  = 0
-      unlimited = false
-    }
+  reschedule {
+    delay = "10s"
+    delay_function = "fibonacci"
+    max_delay = "60s"
+    unlimited = true
   }
 
   update {
