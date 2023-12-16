@@ -110,12 +110,21 @@ EOF
           socket = "/var/opt/nomad/run/${NOMAD_JOB_NAME}-${NOMAD_ALLOC_ID}.sock"
         }
       }
-    }
 
-    reschedule {
-      attempts  = 0
-      unlimited = false
+      restart {
+        attempts = 5
+        delay = "10s"
+        interval = "1m"
+        mode = "fail"
+      }
     }
+  }
+
+  reschedule {
+    delay = "10s"
+    delay_function = "fibonacci"
+    max_delay = "60s"
+    unlimited = true
   }
 
   update {

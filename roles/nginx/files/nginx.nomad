@@ -340,6 +340,13 @@ EOH
     }
   }
 
+  reschedule {
+    delay = "10s"
+    delay_function = "fibonacci"
+    max_delay = "60s"
+    unlimited = true
+  }
+
   update {
     max_parallel = 0
   }
