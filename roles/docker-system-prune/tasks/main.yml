@@ -9,6 +9,7 @@
     - system
     - prune
     - --all
+    - --volumes
     - --force
   register: docker_system_prune_output
   changed_when: >-
