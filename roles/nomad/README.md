@@ -1,6 +1,8 @@
 # nomad
 
-This role configures Nomad to require an ACL token to interact with the control plane. The bootstrap token is stored in Consul at `/nomad/token`.
+This role installs Nomad and bootstraps ACLs. The bootstrap token is stored in Consul KV at `nomad/token`. The UI is available at `nomad.{{ datacenter }}.robojackets.net` once Nginx has initialized.
+
+systemd overrides are added to start the service after Consul and Docker.
 
 You may want to set up OIDC authentication following the [Single Sign-On docs](https://developer.hashicorp.com/nomad/tutorials/single-sign-on)). Specific instructions for Keycloak are below.
 

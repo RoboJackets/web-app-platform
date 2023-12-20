@@ -1,8 +1,8 @@
 # vouch
 
-This role manages a [Vouch](https://github.com/vouch/vouch-proxy) service that is used to authenticate access to the Nomad and Consul UIs.
+This role manages a [Vouch](https://github.com/vouch/vouch-proxy) service that is used to authenticate access to the Nomad and Consul UIs. Vouch is available by default at `vouch.{{ datacenter }}.robojackets.net` once Nginx is fully initialized.
 
-A `/vouch/config` key must be added to Consul with JSON configuration; this will be parsed and loaded as environment variables for the Vouch server.
+A `vouch/config` key must be added to Consul with JSON configuration; this will be parsed and loaded as environment variables for the Vouch server.
 
 Fully configuring Vouch is outside of the scope of this document, but at a minimum, the following keys need to be set:
 

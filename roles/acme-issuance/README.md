@@ -7,3 +7,7 @@ For OIT-managed hosts, DNS setup should be completed before system is handed off
 The role will check if the http-01 challenge passes from the controller's perspective (i.e. your machine), but if you are running this against an OIT-managed system, that is not necessarily representative of what Let's Encrypt or another ACME issuer would see.
 
 The certificate will also have SANs for `*.{datacenter}.robojackets.net` and `*.robojackets.org`, using dns-01 challenges. You will be prompted for Hurricane Electric credentials when necessary.
+
+The generated certificate will be stored in a Docker volume named after the CA. You can safely swap between CAs and the playbook will either request a new certificate or reuse an existing certificate based on the presence of the Docker volume.
+
+This role will also submit a batch job to Nomad to automatically renew the certificate.

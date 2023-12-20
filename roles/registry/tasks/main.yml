@@ -1,7 +1,7 @@
 ---
 #
 # Deploys a private Docker Registry
-# https://docs.docker.com/registry/
+# https://distribution.github.io/distribution/
 #
 - name: Check if htpasswd has been loaded in Consul
   ansible.builtin.uri:
