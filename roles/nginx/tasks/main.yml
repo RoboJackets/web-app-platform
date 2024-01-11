@@ -92,6 +92,9 @@
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     method: GET
     url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
+    status_code:
+    - 200
+    - 404
   register: acme_account_thumbprint_consul
 
 - name: Check for existing default HTTP server config within Consul
