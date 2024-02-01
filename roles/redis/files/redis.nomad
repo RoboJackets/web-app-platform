@@ -59,7 +59,7 @@ job "redis" {
 
       template {
         data = <<EOH
-bind 0.0.0.0
+bind 127.0.0.1
 port {{ env "NOMAD_PORT_resp" }}
 unixsocket /var/opt/nomad/run/{{ env "NOMAD_JOB_NAME" }}-{{ env "NOMAD_ALLOC_ID" }}.sock
 unixsocketperm 777
@@ -75,6 +75,8 @@ EOH
         name = "redis"
 
         port = "resp"
+
+        address = "127.0.0.1"
 
         tags = [
           "resp"

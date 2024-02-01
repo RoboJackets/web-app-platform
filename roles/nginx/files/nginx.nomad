@@ -152,8 +152,7 @@ upstream vouch {
 server {
   server_name _;
 
-  listen {{ env "NOMAD_PORT_vouch_stub" }} default_server;
-  listen [::]:{{ env "NOMAD_PORT_vouch_stub" }} default_server;
+  listen 127.0.0.1:{{ env "NOMAD_PORT_vouch_stub" }} default_server;
 
   location = /validate {
     return 401;

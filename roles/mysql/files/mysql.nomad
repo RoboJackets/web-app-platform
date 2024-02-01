@@ -34,7 +34,9 @@ job "mysql" {
         image = "mysql"
 
         args = [
-          "--socket=/var/opt/nomad/run/${NOMAD_JOB_NAME}-${NOMAD_ALLOC_ID}.sock"
+          "--socket=/var/opt/nomad/run/${NOMAD_JOB_NAME}-${NOMAD_ALLOC_ID}.sock",
+          "--bind-address=127.0.0.1",
+          "--skip-mysqlx",
         ]
 
         force_pull = true
