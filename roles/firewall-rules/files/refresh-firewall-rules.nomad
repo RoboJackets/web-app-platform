@@ -39,14 +39,21 @@ job "refresh-firewall-rules" {
 cd ${NOMAD_TASK_DIR}
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output jq-linux64 https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sha256sum.txt https://raw.githubusercontent.com/jqlang/jq/master/sig/v1.6/sha256sum.txt
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output github.json https://api.github.com/meta
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output uptime-robot.txt https://uptimerobot.com/inc/files/ips/IPv4.txt
-curl --silent --tlsv1.2 --location --output ip-ranges.json https://ip-ranges.amazonaws.com/ip-ranges.json
+curl --silent --tlsv1.2 --location --output aws.json https://ip-ranges.amazonaws.com/ip-ranges.json
 grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
 mv jq-linux64 jq
 chmod +x jq
 
+echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/github-actions.txt
+for range in $(./jq -r '.actions[]' < github.json)
+do
+    echo "allow $range;" >> /firewall_rules/github-actions.txt
+done
+
 echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/aws.conf
-for range in $(./jq -r '.prefixes[] | select(.region=="us-east-1") | select(.service=="EC2") | .ip_prefix' < ip-ranges.json)
+for range in $(./jq -r '.prefixes[] | select(.region=="us-east-1") | select(.service=="EC2") | .ip_prefix' < aws.json)
 do
     echo "allow $range;" >> /firewall_rules/aws.conf
 done
