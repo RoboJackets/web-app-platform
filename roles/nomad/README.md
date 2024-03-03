@@ -63,3 +63,46 @@ nomad acl binding-rule create \
 ```
 
 At this point you should be able to use `nomad login` in a terminal or the "Sign in with Keycloak" button in the web interface.
+
+## GitHub Actions
+
+Create a file with the following contents, with your specific values substituted in curly braces:
+```json
+{
+  "OIDCDiscoveryURL": "https://token.actions.githubusercontent.com",
+  "ExpirationLeeway": "1m",
+  "ClockSkewLeeway": "1m",
+  "BoundAudiences": ["https://nomad.{{ datacenter }}.robojackets.net"],
+  "ClaimMappings": {
+    "repository_id": "repository_id",
+    "repository_owner_id": "repository_owner_id",
+    "environment": "environment",
+    "actor": "actor",
+    "repository": "repository"
+  }
+}
+```
+
+If you haven't already, specify your Nomad server address and existing token:
+```sh
+export NOMAD_ADDR=https://nomad.{{ datacenter }}.robojackets.net
+export NOMAD_TOKEN=00000000-0000-0000-0000-000000000000 # substitute the bootstrap token or another management token
+```
+
+Create the auth method with
+```sh
+nomad acl auth-method create -type=JWT \
+    -name=GitHub \
+    -max-token-ttl=1m \
+    -token-locality=global \
+    -config=@your-config-file.json \
+    -token-name-format="github-actions-deploy-${value.actor}-${value.repository}-${value.environment}"
+```
+
+Create the binding rule with
+```sh
+nomad acl binding-rule create \
+    -auth-method=GitHub \
+    -bind-type=management \
+    -selector='value.repository_owner_id == 3523251 and value.repository_id == 92999743 and (value.environment == "test" or value.environment == "sandbox" or value.environment == "production")'
+```
