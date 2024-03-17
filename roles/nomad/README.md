@@ -59,7 +59,8 @@ Create the binding rule with
 nomad acl binding-rule create \
     -auth-method=Keycloak \
     -bind-type=management \
-    -selector='management in list.roles'
+    -selector='management in list.roles' \
+    -description='Allow admins to log in via Keycloak'
 ```
 
 At this point you should be able to use `nomad login` in a terminal or the "Sign in with Keycloak" button in the web interface.
@@ -104,5 +105,6 @@ Create the binding rule with
 nomad acl binding-rule create \
     -auth-method=GitHub \
     -bind-type=management \
-    -selector='value.repository_owner_id == 3523251 and value.repository_id == 92999743 and (value.environment == "test" or value.environment == "sandbox" or value.environment == "production")'
+    -selector='value.repository_owner_id == 3523251 and value.repository_id == 92999743' \
+    -description='Allow GitHub Actions from apiary'
 ```
