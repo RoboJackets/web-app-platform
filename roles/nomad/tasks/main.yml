@@ -154,6 +154,58 @@
     status_code: [200]
   when: nomad_token_present.status == 404
 
+- name: Check if GitHub Actions auth method is configured in Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/acl/auth-method/GitHubActions
+    status_code:
+    - 200
+    - 404
+  register: github_actions_auth_method
+
+- name: Create GitHub Actions auth method in Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: GitHubActions
+      Type: JWT
+      TokenLocality: global
+      TokenNameFormat: github-actions-${value.actor}-${value.repository}-${value.environment}
+      MaxTokenTTL: 15m
+      Default: false
+      Config:
+        OIDCDiscoveryURL: https://token.actions.githubusercontent.com
+        ExpirationLeeway: 1m
+        ClockSkewLeeway: 1m
+        BoundAudiences: ["https://nomad.{{ datacenter }}.robojackets.net"]
+        ClaimMappings:
+          repository_id: repository_id
+          repository_owner_id: repository_owner_id
+          environment: environment
+          actor: actor
+          repository: repository
+    body_format: json
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    url: http://127.0.0.1:4646/v1/acl/auth-method
+    status_code:
+    - 200
+  when: github_actions_auth_method.status == 404
+
 - name: Check if Nomad auth method is configured within Consul
   ansible.builtin.uri:
     follow_redirects: none
