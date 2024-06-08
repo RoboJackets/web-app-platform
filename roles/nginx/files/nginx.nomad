@@ -139,14 +139,16 @@ upstream {{ .Name }} {
   server 127.0.0.1:{{ .Port }};{{ end -}}
   {{- end }}
 
-    keepalive 8;
+  keepalive 8;
 }
 
 {{ end -}}
 {{- end -}}
-{{ if not (service "vouch") }}
+{{- if not (service "vouch") -}}
 upstream vouch {
   server 127.0.0.1:{{ env "NOMAD_PORT_vouch_stub" }};
+
+  keepalive 8;
 }
 {{ end }}
 server {
