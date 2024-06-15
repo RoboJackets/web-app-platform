@@ -67,22 +67,7 @@ At this point you should be able to use `nomad login` in a terminal or the "Sign
 
 ## GitHub Actions
 
-Create a file with the following contents, with your specific values substituted in curly braces:
-```json
-{
-  "OIDCDiscoveryURL": "https://token.actions.githubusercontent.com",
-  "ExpirationLeeway": "1m",
-  "ClockSkewLeeway": "1m",
-  "BoundAudiences": ["https://nomad.{{ datacenter }}.robojackets.net"],
-  "ClaimMappings": {
-    "repository_id": "repository_id",
-    "repository_owner_id": "repository_owner_id",
-    "environment": "environment",
-    "actor": "actor",
-    "repository": "repository"
-  }
-}
-```
+An authentication method will be created automatically for GitHub Actions, however you will need to configure binding rules to allow access for specific repositories.
 
 If you haven't already, specify your Nomad server address and existing token:
 ```sh
@@ -90,20 +75,10 @@ export NOMAD_ADDR=https://nomad.{{ datacenter }}.robojackets.net
 export NOMAD_TOKEN=00000000-0000-0000-0000-000000000000 # substitute the bootstrap token or another management token
 ```
 
-Create the auth method with
-```sh
-nomad acl auth-method create -type=JWT \
-    -name=GitHub \
-    -max-token-ttl=1m \
-    -token-locality=global \
-    -config=@your-config-file.json \
-    -token-name-format="github-actions-deploy-${value.actor}-${value.repository}-${value.environment}"
-```
-
-Create the binding rule with
+Create a binding rule with
 ```sh
 nomad acl binding-rule create \
-    -auth-method=GitHub \
+    -auth-method=GitHubActions \
     -bind-type=management \
     -selector='value.repository_owner_id == 3523251 and value.repository_id == 92999743' \
     -description='Allow GitHub Actions from apiary'

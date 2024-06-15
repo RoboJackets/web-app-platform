@@ -50,6 +50,18 @@ acl {
 consul {
   address = "unix:///var/opt/nomad/run/consul.sock"
   token = "{{ ansible_facts['consul_token'] }}"
+
+  service_auth_method = "nomad"
+  service_identity {
+    aud = ["https://consul.{{ datacenter }}.robojackets.net"]
+    ttl = "1h"
+  }
+
+  task_auth_method = "nomad"
+  task_identity {
+    aud = ["https://consul.{{ datacenter }}.robojackets.net"]
+    ttl = "1h"
+  }
 }
 
 region = "{{ region }}"

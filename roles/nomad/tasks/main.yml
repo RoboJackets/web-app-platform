@@ -1,7 +1,8 @@
 ---
 #
-# Install Nomad and bootstrap ACLs
+# Install Nomad, bootstrap Nomad ACL, configure Workload Identity within Consul ACL
 # https://developer.hashicorp.com/nomad/tutorials/access-control/access-control-bootstrap
+# https://developer.hashicorp.com/nomad/tutorials/integrate-consul/consul-acl
 #
 # Assumes Consul role already executed successfully
 #
@@ -152,3 +153,256 @@
     url: http://localhost/v1/kv/nomad/token
     status_code: [200]
   when: nomad_token_present.status == 404
+
+- name: Check if GitHub Actions auth method is configured in Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    return_content: true
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/acl/auth-method/GitHubActions
+    status_code:
+    - 200
+    - 404
+  register: github_actions_auth_method
+
+- name: Create GitHub Actions auth method in Nomad
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: GitHubActions
+      Type: JWT
+      TokenLocality: global
+      TokenNameFormat: github-actions-${value.actor}-${value.repository}-${value.environment}
+      MaxTokenTTL: 15m
+      Default: false
+      Config:
+        OIDCDiscoveryURL: https://token.actions.githubusercontent.com
+        ExpirationLeeway: 1m
+        ClockSkewLeeway: 1m
+        BoundAudiences: ["https://nomad.{{ datacenter }}.robojackets.net"]
+        ClaimMappings:
+          repository_id: repository_id
+          repository_owner_id: repository_owner_id
+          environment: environment
+          actor: actor
+          repository: repository
+    body_format: json
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    url: http://127.0.0.1:4646/v1/acl/auth-method
+    status_code:
+    - 200
+  when: github_actions_auth_method.status == 404
+
+- name: Check if Nomad auth method is configured within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/acl/auth-method/nomad
+    status_code:
+    - 200
+    - 404
+  register: auth_method_present
+
+- name: Configure Nomad auth method within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: nomad
+      Type: jwt
+      Config:
+        JWKSURL: http://127.0.0.1:4646/.well-known/jwks.json
+        JWTSupportedAlgs: [RS256]
+        BoundIssuer: "https://nomad.{{ datacenter }}.robojackets.net"
+        BoundAudiences: ["https://consul.{{ datacenter }}.robojackets.net"]
+        ClaimMappings:
+          nomad_namespace: nomad_namespace
+          nomad_job_id: nomad_job_id
+          nomad_task: nomad_task
+          nomad_service: nomad_service
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/acl/auth-method
+    status_code:
+    - 200
+    - 404
+  when: auth_method_present.status == 404
+
+- name: Check if Nomad binding rules are configured within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/acl/binding-rules?authmethod=nomad
+    status_code:
+    - 200
+  register: binding_rules
+
+- name: Create Nomad service binding rule within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Description: Binding rule for services registered from Nomad
+      AuthMethod: nomad
+      Selector: >-
+        "nomad_service" in value
+      BindType: service
+      BindName: ${value.nomad_service}
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/acl/binding-rule
+  when: (binding_rules.json | length) == 0
+
+- name: Create Nomad task binding rule within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Description: Binding rule for Nomad tasks
+      AuthMethod: nomad
+      Selector: >-
+        "nomad_service" not in value
+      BindType: role
+      BindName: nomad-task
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/acl/binding-rule
+  when: (binding_rules.json | length) == 0
+
+- name: Check if Nomad task policy is configured within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/acl/policy/name/nomad-task
+    status_code:
+    - 200
+    - 404
+  register: task_policy
+
+- name: Create Nomad task policy within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: nomad-task
+      Description: ACL policy used by Nomad tasks
+      Rules: |
+        key_prefix "" {
+          policy = "read"
+        }
+
+        service_prefix "" {
+          policy = "read"
+        }
+
+        node_prefix "" {
+          policy = "read"
+        }
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/acl/policy
+  when: task_policy.status == 404
+
+- name: Check if Nomad task role is configured within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/acl/role/name/nomad-task
+    status_code:
+    - 200
+    - 404
+  register: task_role
+
+- name: Create Nomad task role within Consul
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: nomad-task
+      Description: ACL role for Nomad tasks
+      Policies:
+      - Name: nomad-task
+    body_format: json
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: PUT
+    url: http://localhost/v1/acl/role
+  when: task_role.status == 404
