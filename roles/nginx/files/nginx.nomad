@@ -129,9 +129,6 @@ job "nginx" {
     {{- else if index .ServiceMeta "socket" -}}
       {{- scratch.Set "registerService" .Name -}}
     {{- end -}}
-    {{- if .Tags | contains "proxy_cache" -}}
-      {{- scratch.Set "setProxy" .Name -}}
-    {{- end -}}
   {{- end -}}
 
   {{- if eq .Name (scratch.Get "registerService") -}}
@@ -144,9 +141,6 @@ upstream {{ .Name }} {
 
   keepalive 8;
 }
-  {{- if eq .Name (scratch.Get "setProxy") -}}
-proxy_cache_path /var/cache/nginx/{{ .Name }}/ use_temp_path=off keys_zone={{ .Name }}:1m inactive=24h;
-  {{- end -}}
 {{ end -}}
 {{- end -}}
 {{- if not (service "vouch") -}}
@@ -187,6 +181,11 @@ server {
 
   return 301 https://{{ $hostname }}$request_uri;
 }
+
+  {{if (index .ServiceMeta "nginx-config") contains "proxy_cache" -}}
+proxy_cache_path /var/cache/nginx/{{ .Name }}/ use_temp_path=off keys_zone={{ .Name }}:1m inactive=24h;
+  {{- end}}
+
 {{ if not (service $service) }}
 server {
   server_name {{ $hostname }};
