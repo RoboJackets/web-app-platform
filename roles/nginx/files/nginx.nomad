@@ -230,7 +230,6 @@ server {
     allow all;
   }
 
-
   root /assets/{{ $service }};
 
   {{- index .ServiceMeta "nginx-config" -}}
