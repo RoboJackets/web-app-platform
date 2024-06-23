@@ -99,5 +99,6 @@ ui {
 
   label {
     text = "{{ datacenter }}"
+    background_color = "#002FFF"
   }
 }
