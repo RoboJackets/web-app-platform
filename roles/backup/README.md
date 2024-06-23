@@ -24,4 +24,4 @@ Example:
 }
 ```
 
-Review the AWS documentation for [web identity federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_oidc.html) to set up the IAM role. You will need to [create an OIDC provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html) and a [role that trusts the provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html).
+Review the AWS documentation for [web identity federation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_oidc.html) to set up the IAM role. You will need to [create an OIDC provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html) for [Nomad workload identity](https://developer.hashicorp.com/nomad/docs/concepts/workload-identity), and a [role that trusts the provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-idp_oidc.html).
