@@ -141,6 +141,7 @@ upstream {{ .Name }} {
 
   keepalive 8;
 }
+
 {{ end -}}
 {{- end -}}
 {{- if not (service "vouch") -}}
@@ -181,11 +182,6 @@ server {
 
   return 301 https://{{ $hostname }}$request_uri;
 }
-
-  {{if (index .ServiceMeta "nginx-config") contains "proxy_cache" -}}
-proxy_cache_path /var/cache/nginx/{{ .Name }}/ use_temp_path=off keys_zone={{ .Name }}:1m inactive=24h;
-  {{- end}}
-
 {{ if not (service $service) }}
 server {
   server_name {{ $hostname }};
@@ -234,6 +230,7 @@ server {
     allow all;
   }
 
+
   root /assets/{{ $service }};
 
   {{- index .ServiceMeta "nginx-config" -}}
@@ -265,6 +262,9 @@ server {
   {{- end }}
   deny all;
 }
+  {{if index .ServiceMeta "nginx-config" | contains "proxy_cache" -}}
+proxy_cache_path /var/cache/nginx/{{ .Name }}/ use_temp_path=off keys_zone={{ .Name }}:1m inactive=24h;
+  {{- end}}
 {{ end -}}
 {{- end -}}
 {{- end -}}
