@@ -99,6 +99,6 @@ ui {
 
   label {
     text = "{{ datacenter }}"
-    background_color = "#002FFF"
+    background_color = "{{datacenter_tag_color}}"
   }
 }
