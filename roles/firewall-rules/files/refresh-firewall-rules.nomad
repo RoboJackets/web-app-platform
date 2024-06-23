@@ -46,10 +46,10 @@ grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
 mv jq-linux64 jq
 chmod +x jq
 
-echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/github-actions.txt
+echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/github-actions.conf
 for range in $(./jq -r '.actions[]' < github.json)
 do
-    echo "allow $range;" >> /firewall_rules/github-actions.txt
+    echo "allow $range;" >> /firewall_rules/github-actions.conf
 done
 
 echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/aws.conf

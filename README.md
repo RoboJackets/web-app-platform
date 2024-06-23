@@ -26,6 +26,7 @@ ungrouped:
       owner_contact_email: gburdell3@gatech.edu
       acme_server: letsencrypt_test
       fully_qualified_domain_name: bcdc1.gatech.edu
+      datacenter_tag_color: "#002FFF"
       dns_resolvers:
       # these are the OIT-managed recursive resolvers, aka brahmas
       # this list is join()'ed and passed to the resolver directive in nginx; you can add additional config if you'd like
