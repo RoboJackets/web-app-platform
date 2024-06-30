@@ -183,7 +183,7 @@
       Name: GitHubActions
       Type: JWT
       TokenLocality: global
-      TokenNameFormat: github-actions-${value.actor}-${value.repository}-${value.environment}
+      TokenNameFormat: github-actions-${value.actor}-${value.repository}
       MaxTokenTTL: 15m
       Default: false
       Config:
