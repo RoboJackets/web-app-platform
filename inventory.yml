@@ -1,0 +1,26 @@
+---
+ungrouped:
+  hosts:
+    bcdc2:
+      # ansible_host is assumed to be an IP address in several places
+      ansible_host: 130.207.128.25
+      ansible_user: zslaton3
+      ansible_become: true
+      datacenter: bcdc
+      node_name: bcdc2
+      region: campus
+      owner_contact_name: Zach Slaton
+      owner_contact_email: robojackets-it@groups.gatech.edu
+      acme_server: letsencrypt
+      fully_qualified_domain_name: rj-bcdc-rh9.me.gatech.edu
+      # this is the color of the tag next to the nomad logo in the header. Useful if working with multiple systems.
+      datacenter_tag_color: "#00FF00"
+      dns_resolvers:
+      # these are the OIT-managed recursive resolvers, aka brahmas
+      # this list is join()'ed and passed to the resolver directive in nginx; you can add additional config if you'd like
+      - 130.207.244.251
+      - 130.207.244.244
+      - 128.61.244.254
+      meilisearch_versions:
+      - 1.9.0-rc.3
+      - 1.9.0
