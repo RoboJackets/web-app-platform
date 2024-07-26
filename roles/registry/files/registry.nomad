@@ -62,8 +62,6 @@ version: 0.1
 storage:
   filesystem:
     rootdirectory: /registry
-  cache:
-    blobdescriptor: inmemory
 
 http:
   addr: 127.0.0.1:{{ env "NOMAD_PORT_http" }}
