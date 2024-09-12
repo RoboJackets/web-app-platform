@@ -62,6 +62,7 @@
       url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
     register: acme_account_thumbprint_consul
 
+
   - name: Fail if nginx did not return the expected challenge response
     ansible.builtin.fail:
       msg: Nginx did not return the expected response for the ACME http-01 challenge. Issuance would not be successful.
@@ -97,9 +98,15 @@
     failed_when: >-
       "Zone Management" not in hurricane_electric_login.content
 
+  - name: Process extra_domain_SANs
+    when:  extra_domain_SANs is defined
+    ansible.builtin.set_fact:
+      extra_SANs: "{{extra_domain_SANs | map('regex_replace','^','--domain ') |  map('regex_replace','$',' --dns dns_he') | join(' ') | split(' ')}}"
+  
+
   - name: Issue a certificate from {{ acme_server }} - this will take a few minutes, be patient, drink some water
-    ansible.builtin.command:
-      argv:
+    vars:
+      flags:
       - docker
       - run
       - --pull
@@ -144,6 +151,8 @@
       - /certificate/fullchain.pem
       - --ocsp-must-staple
       - --ecc
+    ansible.builtin.command:
+      argv: "{{flags + (extra_SANs | default([]))}}"
 
 - name: Check if a volume is created for {{ acme_server }}
   ansible.builtin.uri:

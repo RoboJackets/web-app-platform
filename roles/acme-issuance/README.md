@@ -8,6 +8,8 @@ The role will check if the http-01 challenge passes from the controller's perspe
 
 The certificate will also have SANs for `*.{datacenter}.robojackets.net` and `*.robojackets.org`, using dns-01 challenges. You will be prompted for Hurricane Electric credentials when necessary.
 
+If the `extra_domain_SANs` list is defined in the inventory file, then any domains included in that list will also be included in the certificate. dns-01 challenges will be used.
+
 The generated certificate will be stored in a Docker volume named after the CA. You can safely swap between CAs and the playbook will either request a new certificate or reuse an existing certificate based on the presence of the Docker volume.
 
 This role will also submit a batch job to Nomad to automatically renew the certificate.
