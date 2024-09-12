@@ -62,7 +62,6 @@
       url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
     register: acme_account_thumbprint_consul
 
-
   - name: Fail if nginx did not return the expected challenge response
     ansible.builtin.fail:
       msg: Nginx did not return the expected response for the ACME http-01 challenge. Issuance would not be successful.
