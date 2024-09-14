@@ -97,9 +97,14 @@
     failed_when: >-
       "Zone Management" not in hurricane_electric_login.content
 
+  - name: Process additional_certificate_sans
+    when:  additional_certificate_sans is defined
+    ansible.builtin.set_fact:
+      additional_certificate_sans: "{{additional_certificate_sans | map('regex_replace','^','--domain ') |  map('regex_replace','$',' --dns dns_he') | join(' ') | split(' ')}}"
+  
   - name: Issue a certificate from {{ acme_server }} - this will take a few minutes, be patient, drink some water
-    ansible.builtin.command:
-      argv:
+    vars:
+      flags:
       - docker
       - run
       - --pull
@@ -144,6 +149,8 @@
       - /certificate/fullchain.pem
       - --ocsp-must-staple
       - --ecc
+    ansible.builtin.command:
+      argv: "{{flags + (additional_certificate_sans | default([]))}}"
 
 - name: Check if a volume is created for {{ acme_server }}
   ansible.builtin.uri:
