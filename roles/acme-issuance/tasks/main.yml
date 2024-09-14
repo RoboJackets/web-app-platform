@@ -97,12 +97,11 @@
     failed_when: >-
       "Zone Management" not in hurricane_electric_login.content
 
-  - name: Process extra_domain_SANs
-    when:  extra_domain_SANs is defined
+  - name: Process additional_certificate_sans
+    when:  additional_certificate_sans is defined
     ansible.builtin.set_fact:
-      extra_SANs: "{{extra_domain_SANs | map('regex_replace','^','--domain ') |  map('regex_replace','$',' --dns dns_he') | join(' ') | split(' ')}}"
+      additional_certificate_sans: "{{additional_certificate_sans | map('regex_replace','^','--domain ') |  map('regex_replace','$',' --dns dns_he') | join(' ') | split(' ')}}"
   
-
   - name: Issue a certificate from {{ acme_server }} - this will take a few minutes, be patient, drink some water
     vars:
       flags:
@@ -151,7 +150,7 @@
       - --ocsp-must-staple
       - --ecc
     ansible.builtin.command:
-      argv: "{{flags + (extra_SANs | default([]))}}"
+      argv: "{{flags + (additional_certificate_sans | default([]))}}"
 
 - name: Check if a volume is created for {{ acme_server }}
   ansible.builtin.uri:

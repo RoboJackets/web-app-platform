@@ -13,7 +13,7 @@ ungrouped:
       owner_contact_email: robojackets-it@groups.gatech.edu
       acme_server: letsencrypt_test
       fully_qualified_domain_name: rj-bcdc-rh9.me.gatech.edu
-      # extra_domain_SANs:
+      # additional_certificate_sans:
       # - "rj.gt"
       # this is the color of the tag next to the nomad logo in the header. Useful if working with multiple systems.
       datacenter_tag_color: "#00FF00"
