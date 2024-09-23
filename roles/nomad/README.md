@@ -51,7 +51,7 @@ nomad acl auth-method create -type=OIDC \
     -max-token-ttl=1h \
     -token-locality=global \
     -config=@your-config-file.json \
-    -token-name-format="keycloak-${value.username}"
+    -token-name-format='keycloak-${value.username}'
 ```
 
 Create the binding rule with
