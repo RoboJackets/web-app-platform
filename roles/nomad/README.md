@@ -4,7 +4,7 @@ This role installs Nomad and bootstraps ACLs. The bootstrap token is stored in C
 
 systemd overrides are added to start the service after Consul and Docker.
 
-You may want to set up OIDC authentication following the [Single Sign-On docs](https://developer.hashicorp.com/nomad/tutorials/single-sign-on)). Specific instructions for Keycloak are below.
+You may want to set up OIDC authentication following the [Single Sign-On docs](https://developer.hashicorp.com/nomad/tutorials/single-sign-on). Specific instructions for Keycloak are below.
 
 ## Using Keycloak
 
