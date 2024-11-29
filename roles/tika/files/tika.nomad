@@ -42,7 +42,7 @@ job "tika" {
 
       resources {
         cpu = 1000
-        memory = 2048
+        memory = 512
         memory_max = 4096
       }
 
