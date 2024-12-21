@@ -11,10 +11,10 @@ ungrouped:
       region: campus
       owner_contact_name: Zach Slaton
       owner_contact_email: robojackets-it@groups.gatech.edu
-      acme_server: letsencrypt_test
+      acme_server: letsencrypt
       fully_qualified_domain_name: rj-bcdc-rh9.me.gatech.edu
-      # additional_certificate_sans:
-      # - "rj.gt"
+      additional_certificate_sans:
+      - "rj.gt"
       # this is the color of the tag next to the nomad logo in the header. Useful if working with multiple systems.
       datacenter_tag_color: "#00FF00"
       dns_resolvers:
@@ -24,5 +24,4 @@ ungrouped:
       - 130.207.244.244
       - 128.61.244.254
       meilisearch_versions:
-      - "1.9"
-      - "1.10"
+      - "1.11"
