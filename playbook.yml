@@ -20,7 +20,6 @@
   - nginx
   # Roles below this point are application-specific; mix and match as needed
   - registry
-  - redis
   - mysql
   - meilisearch
   - tika
