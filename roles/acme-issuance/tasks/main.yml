@@ -141,7 +141,6 @@
       - /certificate/ca.pem
       - --fullchain-file
       - /certificate/fullchain.pem
-      - --ocsp-must-staple
       - --ecc
     ansible.builtin.command:
       argv: "{{flags + (additional_certificate_sans | default([]))}}"
