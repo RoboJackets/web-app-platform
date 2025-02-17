@@ -8,5 +8,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
       - name: ansible-lint
         uses: ansible/ansible-lint@main
+
+      - name: Steampunk Spotter
+        uses: xlab-steampunk/spotter-action@5.2.0
+        env:
+          SPOTTER_API_TOKEN: ${{ secrets.SPOTTER_API_TOKEN }}
