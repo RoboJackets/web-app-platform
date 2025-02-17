@@ -1,0 +1,9 @@
+ansible_version: "2.18"
+skip_checks:
+  - H1001
+  - H2200
+  - H2201
+  - H2203
+  - W1800
+  - W2603
+  - W700
