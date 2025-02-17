@@ -12,9 +12,6 @@ jobs:
       - name: ansible-lint
         uses: ansible/ansible-lint@main
 
-      - name: Download requirements from Ansible Galaxy
-        run: ansible-galaxy collection install --requirements requirements.yml
-
       - name: Steampunk Spotter
         uses: xlab-steampunk/spotter-action@5.2.0
         env:
@@ -22,3 +19,4 @@ jobs:
         with:
           ansible_version: "2.18"
           profile: full
+          project_id: xXch5T8dRWyeTRSx_pf-Dw
