@@ -17,5 +17,5 @@ jobs:
         env:
           SPOTTER_API_TOKEN: ${{ secrets.SPOTTER_API_TOKEN }}
         with:
-          ansible_version: 2.18.2
+          ansible_version: "2.18"
           profile: full
