@@ -6,22 +6,22 @@
     - consul
     - nomad
     - dhparam
-    - self-signed-certificate
-    - acme-account
-    - clean-stuck-jobs
-    - docker-system-prune
-    - firewall-rules
+    - self_signed_certificate
+    - acme_account
+    - clean_stuck_jobs
+    - docker_system_prune
+    - firewall_rules
     # vouch is optional but recommended to allow access to control plane outside of IP allowlist/Nomad/Consul token auth
     - vouch
     - nginx
     # If you are running this on a system that is not directly accessible from the internet,
     # comment out acme-issuance and the second nginx invocation below.
-    - acme-issuance
+    - acme_issuance
     - nginx
     # Roles below this point are application-specific; mix and match as needed
     - registry
     - mysql
     - meilisearch
     - tika
-    - batch-jobs
+    - batch_jobs
     - backup
