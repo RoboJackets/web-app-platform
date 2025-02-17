@@ -15,32 +15,32 @@
     return_content: true
     url: http://localhost/v1.43/volumes/acme-account-{{ acme_server }}
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: acme_volume
 
 - name: Register an ACME account with {{ acme_server }}
   ansible.builtin.command:
     argv:
-    - docker
-    - run
-    - --pull
-    - always
-    - --rm
-    - --network
-    - host
-    - --read-only
-    - --rm
-    - --mount
-    - type=volume,source=acme-account-{{ acme_server }},destination=/acme.sh/
-    - neilpang/acme.sh
-    - --register-account
-    - --server
-    - "{{ acme_server }}"
-    - --accountkeylength
-    - 4096
-    - --email
-    - "{{ owner_contact_email }}"
+      - docker
+      - run
+      - --pull
+      - always
+      - --rm
+      - --network
+      - host
+      - --read-only
+      - --rm
+      - --mount
+      - type=volume,source=acme-account-{{ acme_server }},destination=/acme.sh/
+      - neilpang/acme.sh
+      - --register-account
+      - --server
+      - "{{ acme_server }}"
+      - --accountkeylength
+      - 4096
+      - --email
+      - "{{ owner_contact_email }}"
   register: acme_output
   when: acme_volume.status == 404
 

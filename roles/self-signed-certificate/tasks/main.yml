@@ -18,46 +18,46 @@
       Name: self-signed-certificate
     body_format: json
     status_code:
-    - 201
+      - 201
   register: docker_volume
 
 - name: Generate self-signed certificate
   ansible.builtin.command:
     argv:
-    - openssl
-    - req
-    - -new
-    - -newkey
-    - rsa:4096
-    - -days
-    - 365
-    - -nodes
-    - -x509
-    - -subj
-    - "/C=US/ST=Georgia/L=Atlanta/O=RoboJackets/CN={{ fully_qualified_domain_name }}"
-    - -keyout
-    - "{{ docker_volume.json.Mountpoint }}/key.pem"
-    - -out
-    - "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
+      - openssl
+      - req
+      - -new
+      - -newkey
+      - rsa:4096
+      - -days
+      - 365
+      - -nodes
+      - -x509
+      - -subj
+      - "/C=US/ST=Georgia/L=Atlanta/O=RoboJackets/CN={{ fully_qualified_domain_name }}"
+      - -keyout
+      - "{{ docker_volume.json.Mountpoint }}/key.pem"
+      - -out
+      - "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
     creates: "{{ docker_volume.json.Mountpoint }}/key.pem"
 
 - name: Set permissions on volume
   ansible.builtin.file:
     path: "{{ docker_volume.json.Mountpoint }}/"
     state: directory
-    mode: '0555'
+    mode: "0555"
 
 - name: Set permissions on private key
   ansible.builtin.file:
     path: "{{ docker_volume.json.Mountpoint }}/key.pem"
     state: file
-    mode: '0444'
+    mode: "0444"
 
 - name: Set permissions on certificate
   ansible.builtin.file:
     path: "{{ docker_volume.json.Mountpoint }}/fullchain.pem"
     state: file
-    mode: '0444'
+    mode: "0444"
 
 - name: Copy certificate as CA certificate for Nginx configuration
   ansible.builtin.copy:

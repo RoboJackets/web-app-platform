@@ -17,73 +17,72 @@
     method: GET
     url: http://localhost/v1/kv/registry/htpasswd
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: registry_htpasswd
 
 - name: Configure registry credentials
   when: registry_htpasswd.status == 404
   block:
+    - name: Install httpd-tools
+      ansible.builtin.dnf:
+        name:
+          - httpd-tools
+        state: present
 
-  - name: Install httpd-tools
-    ansible.builtin.yum:
-      name:
-      - httpd-tools
-      state: present
+    - name: Generate registry password
+      ansible.builtin.set_fact:
+        registry_password: "{{ lookup('ansible.builtin.password', 'credentials/registry-password', chars=['ascii_letters', 'digits'], length=128) }}"
+        cacheable: true
 
-  - name: Generate registry password
-    ansible.builtin.set_fact:
-      registry_password: "{{ lookup('ansible.builtin.password', 'credentials/registry-password', chars=['ascii_letters', 'digits'], length=128) }}"
-      cacheable: yes
+    - name: Write config file so root can pull images
+      ansible.builtin.template:
+        src: config.json
+        dest: /root/.docker/config.json
+        owner: root
+        group: root
+        mode: "0400"
 
-  - name: Write config file so root can pull images
-    ansible.builtin.template:
-      src: config.json
-      dest: /root/.docker/config.json
-      owner: root
-      group: root
-      mode: '0400'
+    - name: Hash password with htpasswd
+      ansible.builtin.command:
+        argv:
+          - htpasswd
+          - -nbB
+          - -C
+          - 17
+          - robojacketsregistry
+          - "{{ ansible_facts['registry_password'] }}"
+      register: htpasswd_output
 
-  - name: Hash password with htpasswd
-    ansible.builtin.command:
-      argv:
-      - htpasswd
-      - -nbB
-      - -C
-      - 17
-      - robojacketsregistry
-      - "{{ ansible_facts['registry_password'] }}"
-    register: htpasswd_output
-
-  - name: Store htpasswd output in Consul
-    ansible.builtin.uri:
-      follow_redirects: none
-      force: true
-      return_content: true
-      unix_socket: /var/opt/nomad/run/consul.sock
-      use_netrc: false
-      use_proxy: false
-      validate_certs: false
-      body: "{{ htpasswd_output.stdout }}"
-      headers:
-        X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
-      method: PUT
-      url: http://localhost/v1/kv/registry/htpasswd
-    changed_when: true
+    - name: Store htpasswd output in Consul
+      ansible.builtin.uri:
+        follow_redirects: none
+        force: true
+        return_content: true
+        unix_socket: /var/opt/nomad/run/consul.sock
+        use_netrc: false
+        use_proxy: false
+        validate_certs: false
+        body: "{{ htpasswd_output.stdout }}"
+        headers:
+          X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+        method: PUT
+        url: http://localhost/v1/kv/registry/htpasswd
+      changed_when: true
 
 - name: Generate job submission JSON
   ansible.builtin.command:
     argv:
-    - nomad
-    - job
-    - run
-    - -no-color
-    - -output
-    - -var
-    - region={{ region }}
-    - -var
-    - datacenter={{ datacenter }}
-    - "-"
+      - nomad
+      - job
+      - run
+      - -no-color
+      - -output
+      - -var
+      - region={{ region }}
+      - -var
+      - datacenter={{ datacenter }}
+      - "-"
     stdin: "{{ lookup('ansible.builtin.file', './registry.nomad') }}"
   register: nomad_job_json
   changed_when: false
@@ -157,16 +156,16 @@
 - name: Generate garbage collection job submission JSON
   ansible.builtin.command:
     argv:
-    - nomad
-    - job
-    - run
-    - -no-color
-    - -output
-    - -var
-    - region={{ region }}
-    - -var
-    - datacenter={{ datacenter }}
-    - "-"
+      - nomad
+      - job
+      - run
+      - -no-color
+      - -output
+      - -var
+      - region={{ region }}
+      - -var
+      - datacenter={{ datacenter }}
+      - "-"
     stdin: "{{ lookup('ansible.builtin.file', './registry-garbage-collection.nomad') }}"
   register: nomad_job_json
   changed_when: false
@@ -207,48 +206,47 @@
 - name: Force launch garbage collection job if registry has contents
   when: registry_contents.stat.exists
   block:
+    - name: Force launch the job
+      ansible.builtin.uri:
+        follow_redirects: none
+        force: true
+        use_netrc: false
+        use_proxy: false
+        validate_certs: false
+        return_content: true
+        headers:
+          X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+        method: POST
+        url: http://127.0.0.1:4646/v1/job/registry-garbage-collection/periodic/force
+      register: force_launch_output
 
-  - name: Force launch the job
-    ansible.builtin.uri:
-      follow_redirects: none
-      force: true
-      use_netrc: false
-      use_proxy: false
-      validate_certs: false
-      return_content: true
-      headers:
-        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
-      method: POST
-      url: http://127.0.0.1:4646/v1/job/registry-garbage-collection/periodic/force
-    register: force_launch_output
+    - name: List allocations for evaluation
+      ansible.builtin.uri:
+        follow_redirects: none
+        force: true
+        use_netrc: false
+        use_proxy: false
+        validate_certs: false
+        return_content: true
+        headers:
+          X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+        method: GET
+        url: http://127.0.0.1:4646/v1/evaluation/{{ force_launch_output.json.EvalID }}/allocations
+      register: evaluation_output
 
-  - name: List allocations for evaluation
-    ansible.builtin.uri:
-      follow_redirects: none
-      force: true
-      use_netrc: false
-      use_proxy: false
-      validate_certs: false
-      return_content: true
-      headers:
-        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
-      method: GET
-      url: http://127.0.0.1:4646/v1/evaluation/{{ force_launch_output.json.EvalID }}/allocations
-    register: evaluation_output
-
-  - name: Wait for allocation to complete
-    ansible.builtin.uri:
-      follow_redirects: none
-      force: true
-      use_netrc: false
-      use_proxy: false
-      validate_certs: false
-      return_content: true
-      headers:
-        X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
-      method: GET
-      url: http://127.0.0.1:4646/v1/allocation/{{ evaluation_output.json[0].ID }}
-    register: allocation_output
-    until: allocation_output.json.ClientStatus == "complete"
-    retries: 5
-    delay: 2
+    - name: Wait for allocation to complete
+      ansible.builtin.uri:
+        follow_redirects: none
+        force: true
+        use_netrc: false
+        use_proxy: false
+        validate_certs: false
+        return_content: true
+        headers:
+          X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+        method: GET
+        url: http://127.0.0.1:4646/v1/allocation/{{ evaluation_output.json[0].ID }}
+      register: allocation_output
+      until: allocation_output.json.ClientStatus == "complete"
+      retries: 5
+      delay: 2

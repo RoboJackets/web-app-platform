@@ -10,13 +10,13 @@
   ansible.builtin.file:
     path: /var/opt/nomad/firewall_rules/
     state: directory
-    mode: '0555'
+    mode: "0555"
 
 - name: Create /root/.docker/
   ansible.builtin.file:
     path: /root/.docker/
     state: directory
-    mode: '0500'
+    mode: "0500"
 
 - name: Write placeholder Docker config file
   ansible.builtin.copy:
@@ -25,19 +25,19 @@
     force: false
     owner: root
     group: root
-    mode: '0400'
+    mode: "0400"
 
 - name: Install Nomad
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name:
-    - nomad
+      - nomad
     state: present
 
 - name: Create /etc/systemd/system/nomad.service.d/
   ansible.builtin.file:
     path: /etc/systemd/system/nomad.service.d/
     state: directory
-    mode: '0555'
+    mode: "0555"
 
 - name: Write Nomad service override file
   ansible.builtin.template:
@@ -45,7 +45,7 @@
     dest: /etc/systemd/system/nomad.service.d/override.conf
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   register: nomad_service_override
 
 - name: Write Nomad configuration file
@@ -54,7 +54,7 @@
     dest: /etc/nomad.d/nomad.hcl
     owner: nomad
     group: nomad
-    mode: '0400'
+    mode: "0400"
     validate: nomad config validate %s
   register: nomad_hcl_template
 
@@ -92,14 +92,14 @@
     return_content: true
     url: http://localhost/v1/kv/nomad/token
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: nomad_token_present
 
 - name: Set Nomad token as fact
   ansible.builtin.set_fact:
     nomad_token: "{{ nomad_token_present.json.0.Value | b64decode }}"
-    cacheable: yes
+    cacheable: true
   when: nomad_token_present.status == 200
 
 - name: Bootstrap Nomad ACL
@@ -122,7 +122,7 @@
 - name: Set Nomad token as fact
   ansible.builtin.set_fact:
     nomad_token: "{{ nomad_bootstrap.json.SecretID }}"
-    cacheable: yes
+    cacheable: true
   when: nomad_token_present.status == 404
 
 - name: Retrieve nodes from Nomad to validate Nomad is working
@@ -167,8 +167,8 @@
     method: GET
     url: http://127.0.0.1:4646/v1/acl/auth-method/GitHubActions
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: github_actions_auth_method
 
 - name: Create GitHub Actions auth method in Nomad
@@ -203,7 +203,7 @@
     method: POST
     url: http://127.0.0.1:4646/v1/acl/auth-method
     status_code:
-    - 200
+      - 200
   when: github_actions_auth_method.status == 404
 
 - name: Check if Nomad auth method is configured within Consul
@@ -220,8 +220,8 @@
     method: GET
     url: http://localhost/v1/acl/auth-method/nomad
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: auth_method_present
 
 - name: Configure Nomad auth method within Consul
@@ -252,8 +252,8 @@
     method: PUT
     url: http://localhost/v1/acl/auth-method
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   when: auth_method_present.status == 404
 
 - name: Check if Nomad binding rules are configured within Consul
@@ -270,7 +270,7 @@
     method: GET
     url: http://localhost/v1/acl/binding-rules?authmethod=nomad
     status_code:
-    - 200
+      - 200
   register: binding_rules
 
 - name: Create Nomad service binding rule within Consul
@@ -333,8 +333,8 @@
     method: GET
     url: http://localhost/v1/acl/policy/name/nomad-task
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: task_policy
 
 - name: Create Nomad task policy within Consul
@@ -382,8 +382,8 @@
     method: GET
     url: http://localhost/v1/acl/role/name/nomad-task
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: task_role
 
 - name: Create Nomad task role within Consul
@@ -399,7 +399,7 @@
       Name: nomad-task
       Description: ACL role for Nomad tasks
       Policies:
-      - Name: nomad-task
+        - Name: nomad-task
     body_format: json
     headers:
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"

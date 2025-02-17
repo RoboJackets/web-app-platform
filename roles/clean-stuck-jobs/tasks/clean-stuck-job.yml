@@ -34,5 +34,5 @@
 - name: Request garbage collection at end of loop
   ansible.builtin.set_fact:
     needs_nomad_garbage_collection: true
-    cacheable: yes
+    cacheable: true
   when: (service_status.json | length) == 0 or service_status.json[0].Status != "passing"

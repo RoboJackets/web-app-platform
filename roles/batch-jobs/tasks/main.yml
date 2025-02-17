@@ -3,5 +3,5 @@
 # Deploys various maintenance batch jobs that don't fit anywhere else
 #
 - name: Loop over jobs
-  include_tasks: run-single-job.yml
+  ansible.builtin.include_tasks: run-single-job.yml
   loop: "{{ query('ansible.builtin.fileglob', '*.nomad') }}"

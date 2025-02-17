@@ -17,8 +17,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/hostnames
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: hostnames_map
 
 - name: Store initial hostnames map within Consul
@@ -58,8 +58,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/config/00-baseline
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: baseline_config
 
 - name: Store baseline config within Consul
@@ -93,8 +93,8 @@
     method: GET
     url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: acme_account_thumbprint_consul
 
 - name: Check for existing default HTTP server config within Consul
@@ -111,8 +111,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/config/01-default-http
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: default_http
 
 - name: Store default HTTP server config within Consul
@@ -146,8 +146,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/config/02-default-https
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: default_https
 
 - name: Store default HTTPS server config within Consul
@@ -196,8 +196,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/config/03-consul
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: consul_server
 
 - name: Store Consul server config within Consul
@@ -231,8 +231,8 @@
     method: GET
     url: http://localhost/v1/kv/nginx/config/04-nomad
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: nomad_server
 
 - name: Store Nomad server config within Consul
@@ -267,14 +267,14 @@
       Name: assets
     body_format: json
     status_code:
-    - 201
+      - 201
   register: assets_volume
 
 - name: Set permissions on assets volume
   ansible.builtin.file:
     path: "{{ assets_volume.json.Mountpoint }}/"
     state: directory
-    mode: '0777'
+    mode: "0777"
 
 - name: Check for ACME certificate from {{ acme_server }}
   ansible.builtin.uri:
@@ -288,8 +288,8 @@
     return_content: true
     url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: acme_certificate_volume
 
 - name: Check to make sure CA certificate is loaded in the volume
@@ -313,18 +313,19 @@
 - name: Generate job submission JSON
   ansible.builtin.command:
     argv:
-    - nomad
-    - job
-    - run
-    - -no-color
-    - -output
-    - -var
-    - region={{ region }}
-    - -var
-    - datacenter={{ datacenter }}
-    - -var
-    - certificate_volume={% if acme_certificate_volume.status == 200 and ca_cert.stat.exists and server_cert.stat.exists and key.stat.exists %}acme-certificate-{{ acme_server }}{% else %}self-signed-certificate{% endif %}
-    - "-"
+      - nomad
+      - job
+      - run
+      - -no-color
+      - -output
+      - -var
+      - region={{ region }}
+      - -var
+      - datacenter={{ datacenter }}
+      - -var
+      - certificate_volume={% if acme_certificate_volume.status == 200 and ca_cert.stat.exists and server_cert.stat.exists and key.stat.exists %}acme-certificate-{{
+        acme_server }}{% else %}self-signed-certificate{% endif %}
+      - "-"
     stdin: "{{ lookup('ansible.builtin.file', './nginx.nomad') }}"
   register: nomad_job_json
   changed_when: false
@@ -419,7 +420,7 @@
       Host: nomad.{{ datacenter }}.robojackets.net
       X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
     status_code:
-    - 200
+      - 200
     timeout: 5
   delegate_to: 127.0.0.1
 
@@ -437,6 +438,6 @@
       Host: consul.{{ datacenter }}.robojackets.net
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     status_code:
-    - 200
+      - 200
     timeout: 5
   delegate_to: 127.0.0.1

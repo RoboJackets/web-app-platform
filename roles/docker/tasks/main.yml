@@ -4,16 +4,16 @@
 # https://docs.docker.com/engine/install/centos/
 #
 - name: Remove old Docker packages
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name:
-    - docker
-    - docker-client
-    - docker-client-latest
-    - docker-common
-    - docker-latest
-    - docker-latest-logrotate
-    - docker-logrotate
-    - docker-engine
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
     state: absent
     autoremove: true
 
@@ -28,13 +28,13 @@
     state: present
 
 - name: Install Docker packages
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name:
-    - docker-ce
-    - docker-ce-cli
-    - containerd.io
-    - docker-buildx-plugin
-    - docker-compose-plugin
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
     state: present
 
 - name: Enable and start Docker service
@@ -52,14 +52,14 @@
 - name: Run Hello World image to validate Docker is working
   ansible.builtin.command:
     argv:
-    - docker
-    - run
-    - --pull
-    - always
-    - --rm
-    - --network
-    - none
-    - --read-only
-    - --rm
-    - hello-world
+      - docker
+      - run
+      - --pull
+      - always
+      - --rm
+      - --network
+      - none
+      - --read-only
+      - --rm
+      - hello-world
   changed_when: false

@@ -18,8 +18,8 @@
     method: GET
     url: http://localhost/v1/kv/meilisearch/master-key
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: meilisearch_master_key
 
 - name: Store master key in Consul
@@ -57,10 +57,10 @@
 - name: Set master key as fact
   ansible.builtin.set_fact:
     meilisearch_master_key: "{{ meilisearch_master_key.json.0.Value | b64decode }}"
-    cacheable: yes
+    cacheable: true
 
 - name: Loop over versions
-  include_tasks: deploy-single-version.yml
+  ansible.builtin.include_tasks: deploy-single-version.yml
   loop: "{{ meilisearch_versions }}"
   loop_control:
     loop_var: meilisearch_version

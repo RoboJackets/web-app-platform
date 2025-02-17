@@ -18,8 +18,8 @@
     method: GET
     url: http://localhost/v1/kv/mysql/root_password
     status_code:
-    - 200
-    - 404
+      - 200
+      - 404
   register: mysql_password
 
 - name: Generate and store password in Consul
@@ -42,16 +42,16 @@
 - name: Generate job submission JSON
   ansible.builtin.command:
     argv:
-    - nomad
-    - job
-    - run
-    - -no-color
-    - -output
-    - -var
-    - region={{ region }}
-    - -var
-    - datacenter={{ datacenter }}
-    - "-"
+      - nomad
+      - job
+      - run
+      - -no-color
+      - -output
+      - -var
+      - region={{ region }}
+      - -var
+      - datacenter={{ datacenter }}
+      - "-"
     stdin: "{{ lookup('ansible.builtin.file', './mysql.nomad') }}"
   register: nomad_job_json
   changed_when: false

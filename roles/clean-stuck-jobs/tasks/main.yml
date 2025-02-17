@@ -51,7 +51,7 @@
   changed_when: true
 
 - name: Loop over jobs
-  include_tasks: clean-stuck-job.yml
+  ansible.builtin.include_tasks: clean-stuck-job.yml
   loop: "{{ nomad_service_jobs.json }}"
 
 - name: Run garbage collection
