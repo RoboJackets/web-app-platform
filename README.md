@@ -1,5 +1,6 @@
 # web-app-platform
 [![ansible-lint](https://github.com/RoboJackets/web-app-platform/actions/workflows/ansible-lint.yml/badge.svg?branch=main)](https://github.com/RoboJackets/web-app-platform/actions/workflows/ansible-lint.yml)
+
 Ansible playbook for shared infrastructure
 
 ## Prerequisites
