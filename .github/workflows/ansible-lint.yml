@@ -16,3 +16,6 @@ jobs:
         uses: xlab-steampunk/spotter-action@5.2.0
         env:
           SPOTTER_API_TOKEN: ${{ secrets.SPOTTER_API_TOKEN }}
+        with:
+          ansible_version: 2.18.2
+          profile: full
