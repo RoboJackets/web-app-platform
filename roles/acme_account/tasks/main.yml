@@ -43,6 +43,7 @@
       - "{{ owner_contact_email }}"
   register: acme_output
   when: acme_volume.status == 404
+  changed_when: true
 
 - name: Store ACME account thumbprint in Consul
   ansible.builtin.uri:

@@ -76,7 +76,7 @@
         prompt: Please enter the Cloudflare account ID that contains the zones needed to complete ACME dns-01 challenges
       register: cloudflare_account_id
 
-    - name: Verify Cloudflare account API token validity
+    - name: Verify Cloudflare account API token is valid
       ansible.builtin.uri:
         follow_redirects: none
         force: true
@@ -93,8 +93,8 @@
     - name: Process additional_certificate_sans
       when: additional_certificate_sans is defined
       ansible.builtin.set_fact:
-        additional_certificate_sans: "{{ additional_certificate_sans | map('regex_replace', '^', '--domain ') | map('regex_replace', '$', ' --dns dns_cf') | join('
-          ') | split(' ') }}"
+        additional_certificate_sans: >-
+          {{ additional_certificate_sans | map('regex_replace', '^', '--domain ') | map('regex_replace', '$', ' --dns dns_cf') | join(' ') | split(' ') }}
 
     - name: Issue a certificate from {{ acme_server }} - this will take a few minutes, be patient, drink some water
       vars:
@@ -144,6 +144,7 @@
           - --ecc
       ansible.builtin.command:
         argv: "{{ flags + (additional_certificate_sans | default([])) }}"
+      changed_when: true
 
 - name: Check if a volume is created for {{ acme_server }}
   ansible.builtin.uri:

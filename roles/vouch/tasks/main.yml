@@ -23,8 +23,8 @@
 
 - name: Check for required keys in configuration
   ansible.builtin.fail:
-    msg: Vouch configuration has been loaded in Consul but is missing some required parameters. Check to make sure VOUCH_DOMAINS, OAUTH_PROVIDER, OAUTH_CLIENT_ID,
-      OAUTH_CLIENT_SECRET, and OAUTH_CALLBACK_URL are all present in the map.
+    msg: >-
+      Vouch configuration has been loaded in Consul but is missing some required parameters. Check to make sure VOUCH_DOMAINS, OAUTH_PROVIDER, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, and OAUTH_CALLBACK_URL are all present in the map.
   when: >-
     vouch_config.status == 200 and (
       ("VOUCH_DOMAINS" not in (vouch_config.json.0.Value | b64decode | from_json))

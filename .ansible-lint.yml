@@ -2,3 +2,6 @@
 profile: production
 
 strict: true
+
+skip_list:
+  - name[template]

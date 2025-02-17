@@ -31,8 +31,8 @@
     return_content: true
     headers:
       X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
-    body: "{{ nomad_job_json.stdout | from_json | combine({'Job': {'ID': 'meilisearch-v' + meilisearch_version | string | replace('.', '-'), 'Name': 'meilisearch-v'
-      + meilisearch_version | string | replace('.', '-')}}, recursive=true) }}"
+    body: >-
+      {{ nomad_job_json.stdout | from_json | combine({'Job': {'ID': 'meilisearch-v' + meilisearch_version | string | replace('.', '-'), 'Name': 'meilisearch-v' + meilisearch_version | string | replace('.', '-')}}, recursive=true) }}
     body_format: json
     method: POST
     url: http://127.0.0.1:4646/v1/jobs

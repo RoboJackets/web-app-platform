@@ -53,6 +53,7 @@
           - robojacketsregistry
           - "{{ ansible_facts['registry_password'] }}"
       register: htpasswd_output
+      changed_when: true
 
     - name: Store htpasswd output in Consul
       ansible.builtin.uri:

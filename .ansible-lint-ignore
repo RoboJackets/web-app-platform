@@ -1,0 +1,5 @@
+# This file contains ignores rule violations for ansible-lint
+roles/backup/tasks/main.yml yaml[line-length]
+roles/meilisearch/tasks/deploy-single-version.yml yaml[line-length]
+roles/nginx/tasks/main.yml yaml[line-length]
+roles/vouch/tasks/main.yml yaml[line-length]
