@@ -9,7 +9,7 @@ ungrouped:
       datacenter: bcdc
       node_name: bcdc2
       region: campus
-      owner_contact_name: Zach Slaton
+      owner_contact_name: Dylan Park
       owner_contact_email: robojackets-it@groups.gatech.edu
       acme_server: letsencrypt
       fully_qualified_domain_name: rj-bcdc-rh9.me.gatech.edu
