@@ -23,6 +23,8 @@ job "registry" {
     task "registry" {
       driver = "docker"
 
+      consul {}
+
       config {
         image = "registry"
 
@@ -33,7 +35,7 @@ job "registry" {
         mount {
           type   = "bind"
           source = "secrets/"
-          target = "/etc/docker/registry/"
+          target = "/etc/distribution/"
         }
 
         mount {
@@ -71,7 +73,7 @@ http:
 auth:
   htpasswd:
     realm: registry.${var.datacenter}.robojackets.net
-    path: /etc/docker/registry/htpasswd
+    path: /etc/distribution/htpasswd
 EOH
 
         destination = "secrets/config.yml"

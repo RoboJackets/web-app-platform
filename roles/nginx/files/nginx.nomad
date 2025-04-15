@@ -44,6 +44,10 @@ job "nginx" {
     }
 
     task "nginx" {
+      driver = "docker"
+
+      consul {}
+
       config {
         image = "nginx"
 
@@ -100,8 +104,6 @@ job "nginx" {
           }
         }
       }
-
-      driver = "docker"
 
       resources {
         cpu = 100

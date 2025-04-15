@@ -30,6 +30,8 @@ job "mysql" {
     task "mysql" {
       driver = "docker"
 
+      consul {}
+
       config {
         image = "mysql"
 

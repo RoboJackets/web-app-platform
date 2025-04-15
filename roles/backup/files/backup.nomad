@@ -29,6 +29,8 @@ job "backup" {
     task "dump-mysql-databases" {
       driver = "docker"
 
+      consul {}
+
       config {
         image = "mysql"
 
@@ -94,6 +96,8 @@ EOF
 
     task "snapshot-hashistack" {
       driver = "exec"
+
+      consul {}
 
       config {
         command = "/bin/bash"
@@ -176,6 +180,8 @@ EOF
 
     task "upload-to-s3" {
       driver = "docker"
+
+      consul {}
 
       lifecycle {
         hook = "poststop"

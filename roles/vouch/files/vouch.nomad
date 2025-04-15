@@ -23,6 +23,8 @@ job "vouch" {
     task "vouch" {
       driver = "docker"
 
+      consul {}
+
       config {
         image = "quay.io/vouch/vouch-proxy"
 

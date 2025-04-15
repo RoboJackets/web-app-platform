@@ -28,6 +28,8 @@ job "meilisearch" {
     task "meilisearch" {
       driver = "docker"
 
+      consul {}
+
       config {
         image = "getmeili/meilisearch:v${var.version}"
 
