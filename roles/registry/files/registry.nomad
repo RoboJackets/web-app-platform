@@ -87,6 +87,10 @@ EOH
         destination = "secrets/htpasswd"
       }
 
+      env {
+        OTEL_TRACES_EXPORTER = "none"
+      }
+
       service {
         name = "registry"
 
