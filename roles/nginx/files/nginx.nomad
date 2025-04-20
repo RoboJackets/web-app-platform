@@ -235,6 +235,9 @@ server {
   root /assets/{{ $service }};
 
   {{- index .ServiceMeta "nginx-config" -}}
+  {{- if index .ServiceMeta "nginx-config-more" -}}
+  {{- index .ServiceMeta "nginx-config-more" -}}
+  {{- end -}}
 
   {{- if not (index .ServiceMeta "no-default-headers") -}}
   {{- if index .ServiceMeta "x-frame-options" -}}
