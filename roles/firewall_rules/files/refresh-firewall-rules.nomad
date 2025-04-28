@@ -37,10 +37,22 @@ job "refresh-firewall-rules" {
           "-c",
 <<EOF
 cd ${NOMAD_TASK_DIR}
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output /firewall_rules/block-ai-bots.conf https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/refs/heads/main/nginx-block-ai-bots.conf
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output jq-linux64 https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sha256sum.txt https://raw.githubusercontent.com/jqlang/jq/master/sig/v1.6/sha256sum.txt
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output github.json https://api.github.com/meta
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output uptime-robot.txt https://uptimerobot.com/inc/files/ips/IPv4.txt
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output perplexity.json https://www.perplexity.ai/perplexitybot.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output cloudflare.txt https://www.cloudflare.com/ips-v4
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output digitalocean.csv https://digitalocean.com/geo/google.csv
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output google.json https://www.gstatic.com/ipranges/cloud.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output fastly.json https://api.fastly.com/public-ip-list
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output linode.csv https://geoip.linode.com/
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output oracle.json https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output searchbot.json https://openai.com/searchbot.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output chatgpt.json https://openai.com/chatgpt-user.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output gptbot.json https://openai.com/gptbot.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sentry.txt https://us.sentry.io/api/0/uptime-ips/
 curl --silent --tlsv1.2 --location --output aws.json https://ip-ranges.amazonaws.com/ip-ranges.json
 grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
 mv jq-linux64 jq
@@ -52,16 +64,69 @@ do
     echo "allow $range;" >> /firewall_rules/github-actions.conf
 done
 
-echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/aws.conf
-for range in $(./jq -r '.prefixes[] | select(.region=="us-east-1") | select(.service=="EC2") | .ip_prefix' < aws.json)
-do
-    echo "allow $range;" >> /firewall_rules/aws.conf
-done
-
 echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/uptime-robot.conf
 for range in $(cat uptime-robot.txt)
 do
     echo "allow $(echo $range | tr -d '[:space:]');" >> /firewall_rules/uptime-robot.conf
+done
+
+echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/aws.conf
+for range in $(./jq -r '.prefixes[].ip_prefix' < aws.json)
+do
+    echo "allow $range;" >> /firewall_rules/aws.conf
+done
+
+echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/sentry.conf
+for range in $(cat sentry.txt)
+do
+    echo "allow $range;" >> /firewall_rules/sentry.conf
+done
+
+echo "# ${NOMAD_JOB_NAME}" > /firewall_rules/block-known-vendors.conf
+echo "deny 160.79.104.0/23;" >> /firewall_rules/block-known-vendors.conf
+for range in $(jq -r '.prefixes[].ipv4Prefix' < perplexity.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[].ip_prefix' < aws.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(cat cloudflare.txt)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(cat digitalocean.csv | cut --delimiter=, --fields=1)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[] | select(.ipv4Prefix) | .ipv4Prefix' < google.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.addresses[]' < fastly.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(cat linode.csv | grep -v '#' | cut --delimiter=, --fields=1)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.regions[].cidrs[].cidr' < oracle.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[] | select(.ipv4Prefix) | .ipv4Prefix' < searchbot.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[] | select(.ipv4Prefix) | .ipv4Prefix' < chatgpt.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[] | select(.ipv4Prefix) | .ipv4Prefix' < gptbot.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
 done
 
 ls -al /firewall_rules/
