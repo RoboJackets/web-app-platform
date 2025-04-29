@@ -22,6 +22,18 @@
     group: root
     mode: "0444"
 
+- name: Download Azure IP ranges to target
+  ansible.builtin.get_url:
+    url: https://download.microsoft.com/download/7/1/d/71d86715-5596-4529-9b13-da13a5de5b63/ServiceTags_Public_20250421.json
+    checksum: sha512:eb727fbc6aa14e70a72a914abffff0d8a7d3ba0c46d1143a0b2965943c337ea08b7388afa88354cb1430fa766a310ba30061461cb60374d0d5a1d4a7c674d6bc
+    dest: /var/opt/nomad/firewall_rules/azure.json
+    force: false
+    owner: root
+    group: root
+    mode: "0444"
+    use_netrc: false
+    use_proxy: false
+
 - name: Generate job JSON
   ansible.builtin.command:
     argv:
@@ -54,15 +66,15 @@
     method: POST
     url: http://127.0.0.1:4646/v1/jobs
 
-- name: Check if aws rules are already present
-  ansible.builtin.stat:
-    path: /var/opt/nomad/firewall_rules/aws.conf
-  register: aws_rules
-
 - name: Check if uptime-robot rules are already present
   ansible.builtin.stat:
     path: /var/opt/nomad/firewall_rules/uptime-robot.conf
   register: uptime_robot_rules
+
+- name: Check if block-known-vendors rules are already present
+  ansible.builtin.stat:
+    path: /var/opt/nomad/firewall_rules/block-known-vendors.conf
+  register: block_known_vendors_rules
 
 - name: Manually launch the job to generate dynamic rules
   when: not aws_rules.stat.exists or not uptime_robot_rules.stat.exists

@@ -53,6 +53,8 @@ curl --silent --http2-prior-knowledge --tlsv1.2 --location --output searchbot.js
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output chatgpt.json https://openai.com/chatgpt-user.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output gptbot.json https://openai.com/gptbot.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sentry.txt https://us.sentry.io/api/0/uptime-ips/
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output akamai.txt https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_CIDRs.txt
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output zscaler.json https://config.zscaler.com/api/zscalerthree.net/future/json
 curl --silent --tlsv1.2 --location --output aws.json https://ip-ranges.amazonaws.com/ip-ranges.json
 grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
 mv jq-linux64 jq
@@ -128,10 +130,18 @@ for range in $(./jq -r '.prefixes[] | select(.ipv4Prefix) | .ipv4Prefix' < gptbo
 do
     echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
 done
-
-ls -al /firewall_rules/
-
-cat /firewall_rules/*
+for range in $(./jq -r '.values[].properties.addressPrefixes[]' < azure.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(cat akamai.txt)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(./jq -r '.prefixes[]' < zscaler.json)
+do
+    echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
 EOF
         ]
       }
