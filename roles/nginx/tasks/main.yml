@@ -374,7 +374,7 @@
     url: http://127.0.0.1:4646/v1/allocation/{{ allocations_output.json[0].ID }}
   register: allocation_output
   until: allocation_output.json.TaskStates.nginx.State == "running"
-  retries: 5
+  retries: 10
   delay: 2
   when: (allocations_output.json | length) > 0
 
