@@ -244,6 +244,33 @@ server {
   {{- if index .ServiceMeta "nginx-config-more" -}}
   {{- index .ServiceMeta "nginx-config-more" -}}
   {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-1" -}}
+  {{- index .ServiceMeta "nginx-config-1" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-2" -}}
+  {{- index .ServiceMeta "nginx-config-2" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-3" -}}
+  {{- index .ServiceMeta "nginx-config-3" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-4" -}}
+  {{- index .ServiceMeta "nginx-config-4" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-5" -}}
+  {{- index .ServiceMeta "nginx-config-5" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-6" -}}
+  {{- index .ServiceMeta "nginx-config-6" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-7" -}}
+  {{- index .ServiceMeta "nginx-config-7" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-8" -}}
+  {{- index .ServiceMeta "nginx-config-8" -}}
+  {{- end -}}
+  {{- if index .ServiceMeta "nginx-config-9" -}}
+  {{- index .ServiceMeta "nginx-config-9" -}}
+  {{- end -}}
 
   {{- if not (index .ServiceMeta "no-default-headers") -}}
   {{- if index .ServiceMeta "x-frame-options" -}}
