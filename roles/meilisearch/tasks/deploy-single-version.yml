@@ -104,12 +104,12 @@
     status_code:
       - 200
       - 404
-  register: meilisearch_master_key
+  register: meilisearch_admin_key
 
-- name: Store admin key in Consul
-  when: meilisearch_master_key.status == 404
+- name: Store admin key in Consul for v{{ meilisearch_version }}
+  when: meilisearch_admin_key.status == 404
   block:
-    - name: Get service information from Consul
+    - name: Get service information from Consul for v{{ meilisearch_version }}
       ansible.builtin.uri:
         follow_redirects: none
         force: true
@@ -157,3 +157,32 @@
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     method: GET
     url: http://localhost/v1/kv/meilisearch/admin-key-v{{ meilisearch_version }}
+  register: admin_key
+
+- name: Get service information from Consul for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    unix_socket: /var/opt/nomad/run/consul.sock
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
+    method: GET
+    url: http://localhost/v1/catalog/service/meilisearch-v{{ meilisearch_version | replace('.', '-') }}
+  register: meilisearch_service
+
+- name: Check if admin key actually works for v{{ meilisearch_version }}
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      Authorization: "Bearer {{ admin_key.json.0.Value | b64decode }}"
+    method: GET
+    url: http://127.0.0.1:{{ meilisearch_service.json.0.ServicePort }}/indexes
