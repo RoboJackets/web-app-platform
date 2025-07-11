@@ -102,3 +102,8 @@ ui {
     background_color = "{{ datacenter_tag_color }}"
   }
 }
+
+telemetry {
+  # https://github.com/hashicorp/nomad/issues/26166
+  publish_allocation_metrics = true
+}
