@@ -35,10 +35,6 @@ ungrouped:
       - 130.207.244.251
       - 130.207.244.244
       - 128.61.244.254
-      meilisearch_versions:
-      - 1.1
-      - 1.2
-      - 1.3
 ```
 
 Run the playbook like so:
