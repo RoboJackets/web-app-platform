@@ -21,7 +21,5 @@
     # Roles below this point are application-specific; mix and match as needed
     - registry
     - mysql
-    - meilisearch
-    - tika
     - batch_jobs
     - backup
