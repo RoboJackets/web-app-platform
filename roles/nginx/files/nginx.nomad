@@ -288,11 +288,11 @@ server {
   {{- end -}}
   add_header Alt-Svc 'h3=":{{ env "NOMAD_PORT_https" }}"; ma=86400' always;
 
-  include firewall_rules/block-ai-bots.conf;
-  include firewall_rules/block-known-vendors.conf;
   {{- if index .ServiceMeta "firewall-rules" -}}
     {{- range (index .ServiceMeta "firewall-rules" | parseJSON) -}}
       {{- if eq . "internet" }}
+  include firewall_rules/block-ai-bots.conf;
+  include firewall_rules/block-known-vendors.conf;
   allow all;
       {{- else }}
   include firewall_rules/{{- . -}}.conf;
