@@ -25,8 +25,8 @@ job "acme-renew" {
     prohibit_overlap = true
   }
 
-  group "acme-sh" {
-    task "acme-sh" {
+  group "acme-renew" {
+    task "acme-sh-cron" {
       config {
         image = "neilpang/acme.sh"
         args = [
@@ -66,6 +66,43 @@ job "acme-renew" {
         cpu = 1000
         memory = 512
         memory_max = 2048
+      }
+    }
+
+    task "signal-nginx" {
+      driver = "exec"
+
+      lifecycle {
+        hook = "poststop"
+      }
+
+      identity {
+        env = true
+      }
+
+      config {
+        command = "/bin/bash"
+        args = [
+          "-euxo",
+          "pipefail",
+          "-c",
+<<EOF
+cd ${NOMAD_TASK_DIR}
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output jq-linux64 https://github.com/jqlang/jq/releases/download/jq-1.6/jq-linux64
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sha256sum.txt https://raw.githubusercontent.com/jqlang/jq/master/sig/v1.6/sha256sum.txt
+grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
+mv jq-linux64 jq
+chmod +x jq
+
+curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/client/allocation/$(curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/job/nginx/allocations | ./jq -r '.[0].ID')/signal --request POST --data '{"Signal": "SIGHUP", "Task": "nginx"}' || true
+EOF
+        ]
+      }
+
+      resources {
+        cpu = 100
+        memory = 512
+        memory_max = 1024
       }
     }
   }

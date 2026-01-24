@@ -147,7 +147,7 @@ do
     echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
 done
 
-curl --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/client/allocation/$(curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/job/nginx/allocations | ./jq -r '.[0].ID')/signal --request POST --data '{"Signal": "SIGHUP", "Task": "nginx"}' || true
+curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/client/allocation/$(curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/job/nginx/allocations | ./jq -r '.[0].ID')/signal --request POST --data '{"Signal": "SIGHUP", "Task": "nginx"}' || true
 EOF
         ]
       }

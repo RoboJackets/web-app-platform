@@ -131,6 +131,8 @@
           - "*.robojackets.org"
           - --dns
           - dns_cf
+          - --cert-profile
+          - shortlived
           - --keylength
           - ec-384
           - --cert-file
