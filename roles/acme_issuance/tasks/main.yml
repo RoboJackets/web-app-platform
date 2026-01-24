@@ -133,6 +133,8 @@
           - dns_cf
           - --cert-profile
           - shortlived
+          - --days
+          - 6
           - --keylength
           - ec-384
           - --cert-file
