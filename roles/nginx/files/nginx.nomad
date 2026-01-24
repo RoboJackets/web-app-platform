@@ -216,6 +216,7 @@ server {
   add_header Referrer-Policy no-referrer always;
   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
   add_header Alt-Svc 'h3=":{{ env "NOMAD_PORT_https" }}"; ma=86400' always;
+  add_header X-Robots-Tag none always;
 }
 {{- else -}}
 {{- range service $service -}}
@@ -285,6 +286,7 @@ server {
   add_header Referrer-Policy no-referrer always;
   {{- end -}}
   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+  add_header X-Robots-Tag none always;
   {{- end -}}
   add_header Alt-Svc 'h3=":{{ env "NOMAD_PORT_https" }}"; ma=86400' always;
 
