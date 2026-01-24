@@ -406,3 +406,47 @@
     method: PUT
     url: http://localhost/v1/acl/role
   when: task_role.status == 404
+
+- name: Check if ACL exists for firewall rules job to signal nginx
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/acl/policy/refresh-firewall-rules
+    status_code:
+      - 200
+      - 404
+  register: firewall_rules_signal_nginx
+
+- name: Create ACL to allow firewall rules job to signal nginx
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      Name: refresh-firewall-rules
+      Description: Allow the refresh-firewall-rules job to signal nginx
+      Rules: |
+        namespace "default" {
+          capabilities = ["read-job", "alloc-lifecycle"]
+        }
+      JobACL:
+        Namespace: default
+        JobID: refresh-firewall-rules
+        Group: refresh-firewall-rules
+        Task: refresh-firewall-rules
+    body_format: json
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    url: http://127.0.0.1:4646/v1/acl/policy/refresh-firewall-rules
+  when: firewall_rules_signal_nginx.status == 404
