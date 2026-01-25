@@ -30,7 +30,7 @@
     validate_certs: false
     method: GET
     return_content: true
-    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    url: http://localhost/v1.52/volumes/acme-certificate-{{ acme_server }}
     status_code:
       - 200
       - 404
@@ -160,7 +160,7 @@
     validate_certs: false
     method: GET
     return_content: true
-    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    url: http://localhost/v1.52/volumes/acme-certificate-{{ acme_server }}
     status_code:
       - 200
       - 404

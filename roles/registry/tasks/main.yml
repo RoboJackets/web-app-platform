@@ -196,7 +196,7 @@
     validate_certs: false
     method: GET
     return_content: true
-    url: http://localhost/v1.43/volumes/registry
+    url: http://localhost/v1.52/volumes/registry
   register: registry_volume
 
 - name: Check if registry has contents

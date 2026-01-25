@@ -13,7 +13,7 @@
     validate_certs: false
     method: POST
     return_content: true
-    url: http://localhost/v1.43/volumes/create
+    url: http://localhost/v1.52/volumes/create
     body:
       Name: dhparam
     body_format: json

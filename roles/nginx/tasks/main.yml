@@ -262,7 +262,7 @@
     validate_certs: false
     method: POST
     return_content: true
-    url: http://localhost/v1.43/volumes/create
+    url: http://localhost/v1.52/volumes/create
     body:
       Name: assets
     body_format: json
@@ -286,7 +286,7 @@
     validate_certs: false
     method: GET
     return_content: true
-    url: http://localhost/v1.43/volumes/acme-certificate-{{ acme_server }}
+    url: http://localhost/v1.52/volumes/acme-certificate-{{ acme_server }}
     status_code:
       - 200
       - 404
