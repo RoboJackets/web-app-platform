@@ -182,8 +182,17 @@ server {
     allow all;
   }
 
+  allow 10.0.0.0/8;
+  allow 100.64.0.0/10;
+  allow 172.16.0.0/12;
+  allow 128.61.0.0/16;
+  allow 130.207.0.0/16;
+  allow 143.215.0.0/16;
+
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
+  include firewall_rules/blocklist.de.conf;
+  include firewall_rules/drop.conf;
 
   return 301 https://{{ $hostname }}$request_uri;
 }
@@ -208,14 +217,25 @@ server {
     allow all;
   }
 
+  allow 10.0.0.0/8;
+  allow 100.64.0.0/10;
+  allow 172.16.0.0/12;
+  allow 128.61.0.0/16;
+  allow 130.207.0.0/16;
+  allow 143.215.0.0/16;
+
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
+  include firewall_rules/blocklist.de.conf;
+  include firewall_rules/drop.conf;
 
   add_header X-Frame-Options DENY always;
   add_header X-Content-Type-Options nosniff always;
   add_header Referrer-Policy no-referrer always;
   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+{{ if (key "nginx/config/02-default-https") | contains "Alt-Svc" }}
   add_header Alt-Svc 'h3=":{{ env "NOMAD_PORT_https" }}"; ma=86400' always;
+{{ end }}
   add_header X-Robots-Tag none always;
 }
 {{- else -}}
@@ -288,13 +308,23 @@ server {
   add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
   add_header X-Robots-Tag none always;
   {{- end -}}
+{{ if (key "nginx/config/02-default-https") | contains "Alt-Svc" }}
   add_header Alt-Svc 'h3=":{{ env "NOMAD_PORT_https" }}"; ma=86400' always;
+{{ end }}
 
   {{- if index .ServiceMeta "firewall-rules" -}}
     {{- range (index .ServiceMeta "firewall-rules" | parseJSON) -}}
       {{- if eq . "internet" }}
+  allow 10.0.0.0/8;
+  allow 100.64.0.0/10;
+  allow 172.16.0.0/12;
+  allow 128.61.0.0/16;
+  allow 130.207.0.0/16;
+  allow 143.215.0.0/16;
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
+  include firewall_rules/blocklist.de.conf;
+  include firewall_rules/drop.conf;
   allow all;
       {{- else }}
   include firewall_rules/{{- . -}}.conf;

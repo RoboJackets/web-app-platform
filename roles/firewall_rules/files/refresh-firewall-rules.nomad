@@ -51,8 +51,8 @@ curl --silent --http2-prior-knowledge --tlsv1.2 --location --output cloudflare.t
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output digitalocean.csv https://digitalocean.com/geo/google.csv
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output google.json https://www.gstatic.com/ipranges/cloud.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output fastly.json https://api.fastly.com/public-ip-list
-curl --silent --http2-prior-knowledge --tlsv1.2 --location --output linode.csv https://geoip.linode.com/
-curl --silent --http2-prior-knowledge --tlsv1.2 --location --output oracle.json https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
+curl --silent --tlsv1.2 --location --output linode.csv https://geoip.linode.com/
+curl --silent --tlsv1.2 --location --output oracle.json https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output searchbot.json https://openai.com/searchbot.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output chatgpt.json https://openai.com/chatgpt-user.json
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output gptbot.json https://openai.com/gptbot.json
@@ -60,6 +60,9 @@ curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sentry.txt h
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output akamai.txt https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_CIDRs.txt
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output zscaler.json https://config.zscaler.com/api/zscalerthree.net/future/json
 curl --silent --tlsv1.2 --location --output aws.json https://ip-ranges.amazonaws.com/ip-ranges.json
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output blocklist.de.txt https://lists.blocklist.de/lists/all.txt
+curl --silent --http2-prior-knowledge --tlsv1.2 --location --output drop.json https://www.spamhaus.org/drop/drop_v4.json
+
 grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
 mv jq-linux64 jq
 chmod +x jq
@@ -145,6 +148,14 @@ done
 for range in $(./jq -r '.prefixes[]' < zscaler.json)
 do
     echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
+done
+for range in $(cat blocklist.de.txt)
+do
+    echo "deny $range;" >> /firewall_rules/blocklist.de.conf
+done
+for range in $(./jq -r '.cidr' drop.json | grep -v null)
+do
+    echo "deny $range;" >> /firewall_rules/drop.conf
 done
 
 curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/client/allocation/$(curl --silent --unix-socket ${NOMAD_SECRETS_DIR}/api.sock --header 'X-Nomad-Token: ${NOMAD_TOKEN}' http://localhost/v1/job/nginx/allocations | ./jq -r '.[0].ID')/signal --request POST --data '{"Signal": "SIGHUP", "Task": "nginx"}' || true

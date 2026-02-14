@@ -23,3 +23,7 @@ ungrouped:
       - 130.207.244.251
       - 130.207.244.244
       - 128.61.244.254
+      tls_versions:
+      - TLSv1.2
+      - TLSv1.3
+      enable_h3: true
