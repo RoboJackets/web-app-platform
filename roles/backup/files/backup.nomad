@@ -138,6 +138,8 @@ EOF
     task "compress-docker-volumes" {
       driver = "raw_exec"
 
+      consul {}
+
       config {
         command = "/bin/bash"
         args = [
