@@ -107,7 +107,7 @@ job "nginx" {
 
       resources {
         cpu = 100
-        memory = 2048
+        memory = 512
         memory_max = 4096
       }
 
