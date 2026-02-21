@@ -15,7 +15,7 @@ job "registry-garbage-collection" {
 
   type = "batch"
 
-  priority = 80
+  priority = 1
 
   periodic {
     cron = "0 6 * * *"
