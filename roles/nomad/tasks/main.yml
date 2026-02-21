@@ -530,8 +530,8 @@
     method: POST
     url: http://127.0.0.1:4646/v1/operator/scheduler/configuration
   when: >-
-    scheduler_configuration.json.SchedulerConfig.MemoryOversubscriptionEnabled != true or
-    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SystemSchedulerEnabled != true or
-    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.BatchSchedulerEnabled != false or
-    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SysBatchSchedulerEnabled != false or
-    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.ServiceSchedulerEnabled != true
+    not scheduler_configuration.json.SchedulerConfig.MemoryOversubscriptionEnabled or
+    not scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SystemSchedulerEnabled or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.BatchSchedulerEnabled or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SysBatchSchedulerEnabled or
+    not scheduler_configuration.json.SchedulerConfig.PreemptionConfig.ServiceSchedulerEnabled
