@@ -62,7 +62,6 @@ curl --silent --http2-prior-knowledge --tlsv1.2 --location --output sentry.txt h
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output akamai.txt https://techdocs.akamai.com/property-manager/pdfs/akamai_ipv4_CIDRs.txt
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output zscaler.json https://config.zscaler.com/api/zscalerthree.net/future/json
 curl --silent --tlsv1.2 --location --output aws.json https://ip-ranges.amazonaws.com/ip-ranges.json
-curl --silent --http2-prior-knowledge --tlsv1.2 --location --output blocklist.de.txt https://lists.blocklist.de/lists/all.txt
 curl --silent --http2-prior-knowledge --tlsv1.2 --location --output drop.json https://www.spamhaus.org/drop/drop_v4.json
 
 grep jq-linux64 sha256sum.txt | sha256sum --status --warn --strict --check
@@ -150,10 +149,6 @@ done
 for range in $(./jq -r '.prefixes[]' < zscaler.json)
 do
     echo "deny $range;" >> /firewall_rules/block-known-vendors.conf
-done
-for range in $(cat blocklist.de.txt)
-do
-    echo "deny $range;" >> /firewall_rules/blocklist.de.conf
 done
 for range in $(./jq -r '.cidr' drop.json | grep -v null)
 do

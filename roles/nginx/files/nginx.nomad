@@ -18,7 +18,7 @@ job "nginx" {
 
   datacenters = [var.datacenter]
 
-  type = "system"
+  type = "service"
 
   priority = 100
 
@@ -110,7 +110,7 @@ job "nginx" {
       resources {
         cpu = 100
         memory = 512
-        memory_max = 4096
+        memory_max = 2048
       }
 
       volume_mount {
@@ -193,7 +193,6 @@ server {
 
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
-  include firewall_rules/blocklist.de.conf;
   include firewall_rules/drop.conf;
 
   return 301 https://{{ $hostname }}$request_uri;
@@ -228,7 +227,6 @@ server {
 
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
-  include firewall_rules/blocklist.de.conf;
   include firewall_rules/drop.conf;
 
   add_header X-Frame-Options DENY always;
@@ -325,7 +323,6 @@ server {
   allow 143.215.0.0/16;
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
-  include firewall_rules/blocklist.de.conf;
   include firewall_rules/drop.conf;
   allow all;
       {{- else }}
@@ -416,6 +413,13 @@ EOH
         mode = "fail"
       }
     }
+  }
+
+  reschedule {
+    delay = "10s"
+    delay_function = "fibonacci"
+    max_delay = "60s"
+    unlimited = true
   }
 
   update {

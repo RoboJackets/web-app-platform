@@ -13,7 +13,7 @@ job "vouch" {
 
   datacenters = [var.datacenter]
 
-  type = "system"
+  type = "service"
 
   priority = 90
 
@@ -97,6 +97,13 @@ EOH
         mode = "fail"
       }
     }
+  }
+
+  reschedule {
+    delay = "10s"
+    delay_function = "fibonacci"
+    max_delay = "60s"
+    unlimited = true
   }
 
   update {
