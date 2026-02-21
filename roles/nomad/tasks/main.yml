@@ -466,7 +466,7 @@
     status_code:
       - 200
       - 404
-  register: firewall_rules_signal_nginx
+  register: acme_renew_signal_nginx
 
 - name: Create ACL to allow acme renew job to signal nginx
   ansible.builtin.uri:
@@ -493,4 +493,45 @@
       X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
     method: POST
     url: http://127.0.0.1:4646/v1/acl/policy/acme-renew
-  when: firewall_rules_signal_nginx.status == 404
+  when: acme_renew_signal_nginx.status == 404
+
+- name: Read scheduler configuration
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: GET
+    url: http://127.0.0.1:4646/v1/operator/scheduler/configuration
+  register: scheduler_configuration
+
+- name: Write scheduler configuration
+  ansible.builtin.uri:
+    follow_redirects: none
+    force: true
+    return_content: true
+    use_netrc: false
+    use_proxy: false
+    validate_certs: false
+    body:
+      MemoryOversubscriptionEnabled: true
+      PreemptionConfig:
+        SystemSchedulerEnabled: true
+        SysBatchSchedulerEnabled: false
+        BatchSchedulerEnabled: false
+        ServiceSchedulerEnabled: true
+    body_format: json
+    headers:
+      X-Nomad-Token: "{{ ansible_facts['nomad_token'] }}"
+    method: POST
+    url: http://127.0.0.1:4646/v1/operator/scheduler/configuration
+  when: >-
+    scheduler_configuration.json.SchedulerConfig.MemoryOversubscriptionEnabled != true or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SystemSchedulerEnabled != true or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.BatchSchedulerEnabled != false or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.SysBatchSchedulerEnabled != false or
+    scheduler_configuration.json.SchedulerConfig.PreemptionConfig.ServiceSchedulerEnabled != true

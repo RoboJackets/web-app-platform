@@ -15,6 +15,8 @@ job "registry" {
 
   type = "service"
 
+  priority = 70
+
   group "registry" {
     network {
       port "http" {}

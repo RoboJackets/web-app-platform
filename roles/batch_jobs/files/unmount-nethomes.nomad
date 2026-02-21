@@ -15,6 +15,8 @@ job "unmount-nethomes" {
 
   type = "batch"
 
+  priority = 1
+
   periodic {
     cron = "@hourly"
     prohibit_overlap = true

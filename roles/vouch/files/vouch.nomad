@@ -13,7 +13,9 @@ job "vouch" {
 
   datacenters = [var.datacenter]
 
-  type = "service"
+  type = "system"
+
+  priority = 90
 
   group "vouch" {
     network {
@@ -95,13 +97,6 @@ EOH
         mode = "fail"
       }
     }
-  }
-
-  reschedule {
-    delay = "10s"
-    delay_function = "fibonacci"
-    max_delay = "60s"
-    unlimited = true
   }
 
   update {

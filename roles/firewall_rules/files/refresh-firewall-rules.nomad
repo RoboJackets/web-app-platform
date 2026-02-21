@@ -15,6 +15,8 @@ job "refresh-firewall-rules" {
 
   type = "batch"
 
+  priority = 1
+
   periodic {
     cron = "0 6 * * *"
     prohibit_overlap = true

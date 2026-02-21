@@ -15,6 +15,8 @@ job "backup" {
 
   type = "batch"
 
+  priority = 20
+
   periodic {
     cron = "0 7 * * *"
     prohibit_overlap = true

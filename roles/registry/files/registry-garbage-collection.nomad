@@ -15,6 +15,8 @@ job "registry-garbage-collection" {
 
   type = "batch"
 
+  priority = 80
+
   periodic {
     cron = "0 6 * * *"
     prohibit_overlap = true

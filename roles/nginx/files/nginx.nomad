@@ -18,7 +18,9 @@ job "nginx" {
 
   datacenters = [var.datacenter]
 
-  type = "service"
+  type = "system"
+
+  priority = 100
 
   group "nginx" {
     volume "firewall_rules" {
@@ -414,13 +416,6 @@ EOH
         mode = "fail"
       }
     }
-  }
-
-  reschedule {
-    delay = "10s"
-    delay_function = "fibonacci"
-    max_delay = "60s"
-    unlimited = true
   }
 
   update {

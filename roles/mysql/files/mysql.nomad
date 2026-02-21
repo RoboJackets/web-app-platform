@@ -15,6 +15,8 @@ job "mysql" {
 
   type = "service"
 
+  priority = 80
+
   group "mysql" {
     volume "run" {
       type = "host"

@@ -20,6 +20,8 @@ job "acme-renew" {
 
   type = "batch"
 
+  priority = 20
+
   periodic {
     cron = "0 8 * * *"
     prohibit_overlap = true

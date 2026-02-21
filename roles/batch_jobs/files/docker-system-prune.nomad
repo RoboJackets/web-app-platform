@@ -15,6 +15,8 @@ job "docker-system-prune" {
 
   type = "batch"
 
+  priority = 1
+
   periodic {
     cron = "0 9 * * *"
     prohibit_overlap = true
