@@ -190,6 +190,14 @@ server {
   allow 128.61.0.0/16;
   allow 130.207.0.0/16;
   allow 143.215.0.0/16;
+  allow 192.76.181.0/24;
+  allow 38.110.42.0/24;
+  allow 38.110.46.0/24;
+  allow 38.29.188.0/24;
+  allow 2001:468:300::/48;
+  allow 2001:550:5605::/48;
+  allow 2001:550:9005::/48;
+  allow 2610:148::/32;
 
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
@@ -224,6 +232,14 @@ server {
   allow 128.61.0.0/16;
   allow 130.207.0.0/16;
   allow 143.215.0.0/16;
+  allow 192.76.181.0/24;
+  allow 38.110.42.0/24;
+  allow 38.110.46.0/24;
+  allow 38.29.188.0/24;
+  allow 2001:468:300::/48;
+  allow 2001:550:5605::/48;
+  allow 2001:550:9005::/48;
+  allow 2610:148::/32;
 
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
@@ -321,6 +337,14 @@ server {
   allow 128.61.0.0/16;
   allow 130.207.0.0/16;
   allow 143.215.0.0/16;
+  allow 192.76.181.0/24;
+  allow 38.110.42.0/24;
+  allow 38.110.46.0/24;
+  allow 38.29.188.0/24;
+  allow 2001:468:300::/48;
+  allow 2001:550:5605::/48;
+  allow 2001:550:9005::/48;
+  allow 2610:148::/32;
   include firewall_rules/block-ai-bots.conf;
   include firewall_rules/block-known-vendors.conf;
   include firewall_rules/drop.conf;

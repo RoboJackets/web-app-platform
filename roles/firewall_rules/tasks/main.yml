@@ -24,8 +24,8 @@
 
 - name: Download Azure IP ranges to target
   ansible.builtin.get_url:
-    url: https://download.microsoft.com/download/7/1/d/71d86715-5596-4529-9b13-da13a5de5b63/ServiceTags_Public_20250519.json
-    checksum: sha512:4430b90f7e700fcbe3d401435345a3534341f031d3997ec0ee228fc7e2ee0d43722be2ba5ee4296a5b89a19cf0b6f6c8d1a05bf60951078706df14a4993588cb
+    url: https://download.microsoft.com/download/7/1/d/71d86715-5596-4529-9b13-da13a5de5b63/ServiceTags_Public_20260223.json
+    checksum: sha512:9d0315e2a145d3d51cc6189f687f98e183385aacfec86309ca2f8499b4a7fe8db9ac971c5277bb408597439b8724482f566563ba1790d8fa14bcce958b99df92
     dest: /var/opt/nomad/firewall_rules/azure.json
     force: false
     owner: root
