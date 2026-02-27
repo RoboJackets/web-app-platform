@@ -3,8 +3,8 @@ ungrouped:
   hosts:
     bcdc2:
       # ansible_host is assumed to be an IP address in several places
-      ansible_host: 130.207.128.25
       ansible_user: zslaton3
+      ansible_host: 2610:148:1f01:af00::8
       ansible_become: true
       datacenter: bcdc
       node_name: bcdc2
