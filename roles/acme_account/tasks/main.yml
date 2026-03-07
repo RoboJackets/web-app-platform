@@ -75,3 +75,43 @@
       X-Consul-Token: "{{ ansible_facts['consul_token'] }}"
     method: GET
     url: http://localhost/v1/kv/acme/{{ acme_server }}-thumbprint
+
+- name: Prompt for Slack bot token
+  ansible.builtin.pause:
+    prompt: Please enter the bot token to use with Slack to post renewal notifications
+  register: slack_bot_token
+
+- name: Prompt for Slack channel ID
+  ansible.builtin.pause:
+    prompt: Please enter the channel ID to post renewal notifications
+  register: slack_channel_id
+
+- name: Configure notifications
+  ansible.builtin.command:
+    argv:
+      - docker
+      - run
+      - --pull
+      - always
+      - --rm
+      - --network
+      - host
+      - --read-only
+      - --rm
+      - --mount
+      - type=volume,source=acme-account-{{ acme_server }},destination=/acme.sh/
+      - --env
+      - SLACK_APP_CHANNEL={{ slack_channel_id.user_input }}
+      - --env
+      - SLACK_APP_TOKEN={{ slack_bot_token.user_input }}
+      - neilpang/acme.sh
+      - --set-notify
+      - --notify-level
+      - '3'
+      - --notify-mode
+      - '0'
+      - --notify-hook
+      - slack_app
+      - --notify-source
+      - '{{ datacenter }}'
+  changed_when: true
