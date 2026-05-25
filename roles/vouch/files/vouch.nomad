@@ -85,7 +85,7 @@ EOH
         }
 
         meta {
-          nginx-config = "location / {proxy_pass http://vouch;proxy_set_header Host $host;} location /static/ {proxy_pass http://vouch;proxy_pass_request_headers off;proxy_pass_request_body off;proxy_cache vouch_assets;proxy_cache_valid 24h;add_header X-Cache-Status $upstream_cache_status;}"
+          nginx-config = "location = /healthcheck {proxy_pass http://vouch;proxy_set_header Host $host;allow all;} location / {proxy_pass http://vouch;proxy_set_header Host $host;} location /static/ {proxy_pass http://vouch;proxy_pass_request_headers off;proxy_pass_request_body off;proxy_cache vouch_assets;proxy_cache_valid 24h;add_header X-Cache-Status $upstream_cache_status;}"
           firewall-rules = jsonencode(["internet"])
         }
       }
