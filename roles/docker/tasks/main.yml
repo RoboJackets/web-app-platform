@@ -1,7 +1,7 @@
 ---
 #
-# Ansible implementation of Docker Engine on CentOS install guide
-# https://docs.docker.com/engine/install/centos/
+# Ansible implementation of Docker Engine on RHEL install guide
+# https://docs.docker.com/engine/install/rhel/
 #
 - name: Remove old Docker packages
   ansible.builtin.dnf:
@@ -14,18 +14,30 @@
       - docker-latest-logrotate
       - docker-logrotate
       - docker-engine
+      - podman
+      - runc
     state: absent
     autoremove: true
 
-- name: Add Docker repository
+- name: Install dnf-plugins-core
+  ansible.builtin.dnf:
+    name:
+      - dnf-plugins-core
+    state: present
+
+- name: Remove legacy manually configured Docker repository
   ansible.builtin.yum_repository:
     name: docker-ce-stable
-    description: Docker CE Stable - $basearch
-    baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
-    enabled: true
-    gpgcheck: true
-    gpgkey: https://download.docker.com/linux/centos/gpg
-    state: present
+    state: absent
+
+- name: Add Docker repository
+  ansible.builtin.command:
+    argv:
+      - dnf
+      - config-manager
+      - --add-repo
+      - https://download.docker.com/linux/rhel/docker-ce.repo
+    creates: /etc/yum.repos.d/docker-ce.repo
 
 - name: Install Docker packages
   ansible.builtin.dnf:
