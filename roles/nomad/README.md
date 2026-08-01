@@ -2,7 +2,20 @@
 
 This role installs Nomad and bootstraps ACLs. The bootstrap token is stored in Consul KV at `nomad/token`. The UI is available at `nomad.{{ datacenter }}.robojackets.net` once Nginx has initialized.
 
-systemd overrides are added to start the service after Consul and Docker.
+systemd overrides are added to start the service after Consul and Docker. Nomad listens on `127.0.0.1:4646`.
+
+## What this role configures
+
+In addition to installing Nomad and bootstrapping ACLs, the role:
+
+- Creates host volumes `run` (`/var/opt/nomad/run/`) and `firewall_rules` (`/var/opt/nomad/firewall_rules/`)
+- Writes a placeholder Docker auth file at `/root/.docker/config.json`
+- Configures Nomad workload identity with Consul (JWT auth method `nomad`, service/task binding rules, and policy/role `nomad-task`)
+- Creates Nomad ACL policies used by periodic jobs that signal Nginx (`refresh-firewall-rules`, `acme-renew`)
+- Enables memory oversubscription and preemption in the scheduler
+- Auto-creates a GitHub Actions JWT auth method (binding rules must still be added manually)
+
+Required inventory vars include `datacenter`, `region`, `node_name`, and `datacenter_tag_color`. The Consul role must run first so `consul_token` is available.
 
 You may want to set up OIDC authentication following the [Single Sign-On docs](https://developer.hashicorp.com/nomad/tutorials/single-sign-on). Specific instructions for Keycloak are below.
 

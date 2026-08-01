@@ -1,6 +1,6 @@
 # acme-issuance
 
-This role will attempt to issue an ACME certificate for the fully-qualified domain name specified in the inventory using the [http-01 challenge](https://letsencrypt.org/docs/challenge-types/). This means that the domain name must be **resolvable in public DNS** and the host must have **port 80 open to the Internet**. If the challenge fails, a self-signed certificate will be used.
+This role will attempt to issue an ACME certificate for the fully-qualified domain name specified in the inventory using the [http-01 challenge](https://letsencrypt.org/docs/challenge-types/). This means that the domain name must be **resolvable in public DNS** and the host must have **port 80 open to the Internet**. If the controller-side challenge check fails, this role skips issuance and renewal; Nginx continues using the self-signed certificate created earlier by `self_signed_certificate`.
 
 For OIT-managed hosts, DNS setup should be completed before system is handed off. Firewall changes must be submitted to the CSR responsible for the VLAN.
 
@@ -10,6 +10,6 @@ The certificate will also have SANs for `*.{datacenter}.robojackets.net` and `*.
 
 If the `additional_certificate_sans` list is defined in the inventory file, then any domains included in that list will also be included in the certificate. dns-01 challenges will be used.
 
-The generated certificate will be stored in a Docker volume named after the CA. You can safely swap between CAs and the playbook will either request a new certificate or reuse an existing certificate based on the presence of the Docker volume.
+Certificates are issued with the ACME `shortlived` profile (EC-384 keys, renew when fewer than 6 days remain) via `neilpang/acme.sh` and stored in a Docker volume named `acme-certificate-{{ acme_server }}`. The matching ACME account volume is `acme-account-{{ acme_server }}`. You can safely swap between CAs and the playbook will either request a new certificate or reuse an existing certificate based on the presence of the certificate Docker volume.
 
-This role will also submit a batch job to Nomad to automatically renew the certificate.
+This role also submits the Nomad batch job `acme-renew` (daily at 08:00), which runs `acme.sh --cron` and then sends SIGHUP to Nginx so renewed certificates are picked up.

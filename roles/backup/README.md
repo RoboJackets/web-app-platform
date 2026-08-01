@@ -1,8 +1,8 @@
 # backup
 
-This role submits a batch job to Nomad to back up MySQL databases, Docker volumes, Nomad snapshots, and Consul snapshots to AWS S3.
+This role submits a Nomad batch job (`backup`, daily at 07:00) to back up MySQL databases, Docker volumes, Nomad snapshots, and Consul snapshots to AWS S3 (`DEEP_ARCHIVE` in `us-east-1`).
 
-You must **manually** create a Consul key with the following JSON configuration:
+You must **manually** create Consul KV key `backup/config` with the following JSON configuration. If the key is missing, the role skips submitting the job.
 
 ```json
 {
