@@ -34,7 +34,6 @@
       # consul is deliberately not included here because its service registration is weird and different
       # so we have to manually configure the whole thing
       nomad: "nomad.{{ datacenter }}.robojackets.net"
-      registry: "registry.{{ datacenter }}.robojackets.net"
       vouch: "vouch.{{ datacenter }}.robojackets.net"
     body_format: json
     headers:

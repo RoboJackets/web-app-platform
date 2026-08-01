@@ -19,7 +19,6 @@
     - acme_issuance
     - nginx
     # Roles below this point are application-specific; mix and match as needed
-    - registry
     - mysql
     - batch_jobs
     - backup

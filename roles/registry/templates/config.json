@@ -1,7 +1,0 @@
-{
-    "auths": {
-        "registry.{{ datacenter }}.robojackets.net": {
-            "auth": "{{ ('robojacketsregistry:' + ansible_facts['registry_password']) | b64encode }}"
-        }
-    }
-}

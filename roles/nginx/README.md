@@ -9,7 +9,6 @@ The default hostname map is:
 ```json
 {
     "nomad": "nomad.{{ datacenter }}.robojackets.net",
-    "registry": "registry.{{ datacenter }}.robojackets.net",
     "vouch": "vouch.{{ datacenter }}.robojackets.net"
 }
 ```
