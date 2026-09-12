@@ -4,14 +4,13 @@
 # https://developer.hashicorp.com/consul/tutorials/day-0/access-control-setup
 #
 - name: Add HashiCorp repository
-  ansible.builtin.yum_repository:
-    name: hashicorp
-    description: HashiCorp Stable - $basearch
-    baseurl: https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable
-    enabled: true
-    gpgcheck: true
-    gpgkey: https://rpm.releases.hashicorp.com/gpg
-    state: present
+  ansible.builtin.command:
+    argv:
+      - dnf
+      - config-manager
+      - --add-repo
+      - https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    creates: /etc/yum.repos.d/hashicorp.repo
 
 - name: Install Consul
   ansible.builtin.dnf:
