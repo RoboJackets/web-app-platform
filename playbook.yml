@@ -2,6 +2,7 @@
 - name: Bootstrap web app platform
   hosts: all
   roles:
+    - cloudflared
     - docker
     - consul
     - nomad

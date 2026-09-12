@@ -1,0 +1,69 @@
+---
+#
+# Install cloudflared
+#
+- name: Add Cloudflare repository
+  ansible.builtin.command:
+    argv:
+      - dnf
+      - config-manager
+      - --add-repo
+      - https://pkg.cloudflare.com/cloudflared-ascii.repo
+    creates: /etc/yum.repos.d/cloudflared-ascii.repo
+
+- name: Install cloudflared package
+  ansible.builtin.dnf:
+    name:
+      - cloudflared
+    state: present
+
+- name: Check if service is already installed
+  ansible.builtin.stat:
+    path: /etc/systemd/system/cloudflared.service
+  register: cloudflared_service
+
+- name: Install cloudflared service
+  when: not cloudflared_service.stat.exists
+  block:
+    - name: Prompt for Cloudflare tunnel installation command
+      ansible.builtin.pause:
+        prompt: Please paste the command to install cloudflared as a service
+      register: cloudflare_tunnel_setup_command
+
+    - name: Install cloudflared service
+      ansible.builtin.command:
+        argv:
+          - bash
+          - -xeu
+          - -c
+          - "{{ cloudflare_tunnel_setup_command.user_input }}"
+      changed_when: true
+
+- name: Check if Cloudflare SSH CA is already configured
+  ansible.builtin.stat:
+    path: /etc/ssh/sshd_config.d/cloudflare.conf
+  register: cloudflare_sshd_config
+
+- name: Add Cloudflare SSH CA
+  when: not cloudflare_sshd_config.stat.exists
+  block:
+    - name: Prompt for Cloudflare SSH CA public key
+      ansible.builtin.pause:
+        prompt: Please paste the CA public key
+      register: cloudflare_ssh_ca_key
+
+    - name: Write Cloudflare SSH CA public key to disk
+      ansible.builtin.copy:
+        content: "{{ cloudflare_ssh_ca_key.user_input }}"
+        dest: /etc/ssh/cloudflare.pub
+
+    - name: Write sshd configuration to disk
+      ansible.builtin.copy:
+        src: sshd_config
+        dest: /etc/ssh/sshd_config.d/cloudflare.conf
+
+    - name: Reload sshd
+      ansible.builtin.systemd_service:
+        name: sshd
+        state: reloaded
+        enabled: true
