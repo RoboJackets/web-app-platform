@@ -56,11 +56,17 @@
       ansible.builtin.copy:
         content: "{{ cloudflare_ssh_ca_key.user_input }}"
         dest: /etc/ssh/cloudflare.pub
+        owner: consul
+        group: consul
+        mode: "0444"
 
     - name: Write sshd configuration to disk
       ansible.builtin.copy:
         src: sshd_config
         dest: /etc/ssh/sshd_config.d/cloudflare.conf
+        owner: consul
+        group: consul
+        mode: "0444"
 
     - name: Reload sshd
       ansible.builtin.systemd_service:
